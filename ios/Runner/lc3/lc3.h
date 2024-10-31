@@ -90,7 +90,7 @@
  *   | free(enc);
  *
  *   Note :
- *   - A NULL memory adress as input, will return a NULL encoder context.
+ *   - A NULL memory address as input, will return a NULL encoder context.
  *   - The returned encoder handle is set at the address of the allocated
  *     memory space, you can directly free the handle.
  *
