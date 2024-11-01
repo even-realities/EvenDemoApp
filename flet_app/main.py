@@ -11,8 +11,8 @@ async def main(page: ft.Page):
     connected = False  # Track connection status
 
     status_header = ft.Text(value="Glasses Status", size=20, weight=ft.FontWeight.BOLD)
-    left_status = ft.Text(value="Left Glasses: Disconnected", size=14)
-    right_status = ft.Text(value="Right Glasses: Disconnected", size=14)
+    left_status = ft.Text(value="Left Glass: Disconnected", size=14)
+    right_status = ft.Text(value="Right Glass: Disconnected", size=14)
 
     message_input = ft.TextField(label="Message to send", width=400)
     send_button = ft.ElevatedButton(text="Send Message", disabled=True)
@@ -31,12 +31,14 @@ async def main(page: ft.Page):
 
     def on_status_changed(address, status):
         nonlocal connected
-        log_message(f"[{address}] Status changed to: {status}")
         for glass in glasses.glasses.values():
             if glass.side == "left":
-                left_status.value = f"Left Glasses ({glass.name[:13]}): {status}"
+                left_status.value = f"Left Glass ({glass.name[:13]}): {status}"
+                log_message(f"Left Glass ({glass.name[:13]}): {status}")
+                
             elif glass.side == "right":
-                right_status.value = f"Right Glasses ({glass.name[:13]}): {status}"
+                right_status.value = f"Right Glass ({glass.name[:13]}): {status}"
+                log_message(f"Right Glass ({glass.name[:13]}): {status}")
         # Check connection status
         connected = any(
             glass.client.is_connected for glass in glasses.glasses.values()
