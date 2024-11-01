@@ -34,9 +34,9 @@ async def main(page: ft.Page):
         log_message(f"[{address}] Status changed to: {status}")
         for glass in glasses.glasses.values():
             if glass.side == "left":
-                left_status.value = f"Left Glasses ({glass.address}): {status}"
+                left_status.value = f"Left Glasses ({glass.name[:13]}): {status}"
             elif glass.side == "right":
-                right_status.value = f"Right Glasses ({glass.address}): {status}"
+                right_status.value = f"Right Glasses ({glass.name[:13]}): {status}"
         # Check connection status
         connected = any(
             glass.client.is_connected for glass in glasses.glasses.values()
