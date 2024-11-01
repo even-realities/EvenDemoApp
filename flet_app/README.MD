@@ -17,8 +17,8 @@ This project is a Flet-based UI application to control and interact with smart g
 
 1. Clone the repository:
     ```sh
-    git clone <repository-url>
-    cd <repository-directory>
+    git clone https://github.com/emingenc/EvenDemoApp.git
+    cd flet_app
     ```
 
 2. Install the required packages:
