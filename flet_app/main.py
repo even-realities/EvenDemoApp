@@ -2,6 +2,7 @@ import flet as ft
 import asyncio
 from g1 import glasses  # Adjust the import as necessary
 
+
 async def main(page: ft.Page):
     page.title = "Glasses Control Panel"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -22,7 +23,11 @@ async def main(page: ft.Page):
 
     log_label = ft.Text(value="Event Log:", size=16, weight=ft.FontWeight.BOLD)
     log_output = ft.TextField(
-        value="", read_only=True, multiline=True, width=750, height=500
+        value="",
+        read_only=True,
+        multiline=True,
+        width=750,
+        height=500,
     )
 
     def log_message(message):
@@ -35,14 +40,12 @@ async def main(page: ft.Page):
             if glass.side == "left":
                 left_status.value = f"Left Glass ({glass.name[:13]}): {status}"
                 log_message(f"Left Glass ({glass.name[:13]}): {status}")
-                
+
             elif glass.side == "right":
                 right_status.value = f"Right Glass ({glass.name[:13]}): {status}"
                 log_message(f"Right Glass ({glass.name[:13]}): {status}")
         # Check connection status
-        connected = any(
-            glass.client.is_connected for glass in glasses.glasses.values()
-        )
+        connected = any(glass.client.is_connected for glass in glasses.glasses.values())
         connect_button.visible = not connected
         disconnect_button.visible = connected
         send_button.disabled = not connected
@@ -95,17 +98,29 @@ async def main(page: ft.Page):
                     spacing=20,
                 ),
                 ft.Row(
-                    [message_input, send_button],
+                    [message_input],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=20,
+                ),
+                ft.Row(
+                    [send_button],
                     alignment=ft.MainAxisAlignment.CENTER,
                     spacing=20,
                 ),
                 log_label,
-                log_output,
+                ft.Row(
+                    [log_output],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=20,
+                    expand=True,
+                ),
             ],
             alignment=ft.MainAxisAlignment.START,
             spacing=30,
+            expand=True,
         )
     )
+
 
 if __name__ == "__main__":
     ft.app(target=main)
