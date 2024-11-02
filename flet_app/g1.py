@@ -204,36 +204,36 @@ class Glass:
             f"Received command {hex(cmd)} from {self.side.capitalize()} glass ({self.address}): {data.hex()}"
         )
         logging.debug(f"Payload: {payload.hex()}")
-
+        ble_receive = BleReceive(lr=self.side, cmd=cmd, data=payload)
         handler = self.command_handlers.get(cmd, self.handle_unknown_command)
-        await handler(payload)
+        await handler(ble_receive)
 
     # Command Handlers
-    async def handle_heartbeat_response(self, payload: bytes):
+    async def handle_heartbeat_response(self, ble_receive: BleReceive):
         """Handle heartbeat response."""
         logging.info(
-            f"Heartbeat from {self.side.capitalize()} glass: {self.name} ({self.address})."
+            f"Heartbeat {self.side.capitalize()} glass: {self.name} ({self.address})."
         )
         self.received_ack = True
 
-    async def handle_voice_data(self, payload: bytes):
+    async def handle_voice_data(self, ble_receive: BleReceive):
         """Handle incoming voice data."""
         logging.info(
-            f"Received voice data from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
+            f"Received voice data from {self.side.capitalize()} glass: {self.name} ({self.address}): {ble_receive.data.hex()}"
         )
-        self.audio_buffer += payload
+        self.audio_buffer += ble_receive.data
         await self.save_audio()
 
-    async def handle_evenai_response(self, payload: bytes):
+    async def handle_evenai_response(self, ble_receive: BleReceive):
         """Handle EvenAI response."""
         logging.info(
-            f"Received EvenAI response from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
+            f"Received EvenAI response from {self.side.capitalize()} glass: {self.name} ({self.address}): {ble_receive.data.hex()}"
         )
         self._ack_event.set()
 
-    async def handle_device_order(self, payload: bytes):
+    async def handle_device_order(self, ble_receive: BleReceive):
         """Handle device order commands."""
-        order = payload[0] if payload else None
+        order = ble_receive.data[0] if ble_receive.data else None
         self.last_device_order = order
         logging.info(
             f"Received device order from {self.side.capitalize()} glass: {self.name} ({self.address}): {hex(order) if order else 'N/A'}"
@@ -241,11 +241,11 @@ class Glass:
         if order == DeviceOrders.DISPLAY_COMPLETE:
             self.received_ack = True
 
-    async def handle_unknown_command(self, payload: bytes):
+    async def handle_unknown_command(self, ble_receive: BleReceive):
         """Handle unknown commands."""
-        cmd = payload[0] if payload else None
+        cmd = ble_receive.cmd
         logging.warning(
-            f"Unknown command {hex(cmd) if cmd else 'N/A'} from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
+            f"Unknown command {hex(cmd) if cmd else 'N/A'} from {self.side.capitalize()} glass: {self.name} ({self.address}): {ble_receive.data.hex()}"
         )
 
     async def save_audio(self):
@@ -304,7 +304,6 @@ class Glass:
                         )
                         await self.client.disconnect()
                         break
-                        
 
                 except Exception as e:
                     logging.error(
