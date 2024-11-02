@@ -77,13 +77,12 @@ class Glass:
         self.uart_tx = None
         self.uart_rx = None
         self.heartbeat_seq = 0
+        self.heartbeat_task = None
         self.evenai_seq = 0
         self.received_ack = False
         self.last_device_order = None
         self.audio_buffer = bytearray()
-        self.audio_params = {"channels": 1,
-            "sampwidth": 2,
-            "framerate": 16000}
+        self.audio_params = {"channels": 1, "sampwidth": 2, "framerate": 16000}
         self.command_handlers: Dict[int, Callable[[bytes], Any]] = {
             Commands.BLE_REQ_HEARTBEAT: self.handle_heartbeat_response,
             Commands.BLE_REQ_TRANSFER_MIC_DATA: self.handle_voice_data,
@@ -93,33 +92,50 @@ class Glass:
         self._ack_event = asyncio.Event()  # Initialize acknowledgment event
 
     async def connect(self):
-        """Connect to the glasses device."""
+        """Connect to the glass device."""
         try:
             await self.client.connect()
             if self.client.is_connected:
                 logging.info(
-                    f"Connected to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Connected to {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
                 await self.discover_services()
                 await self.send_init_command()
                 await self.start_notifications()
-                asyncio.create_task(self.heartbeat_loop())
+                if not self.heartbeat_task or self.heartbeat_task.done():
+                    self.heartbeat_task = asyncio.create_task(self.heartbeat_loop())
+
             else:
                 logging.error(
-                    f"Failed to connect to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Failed to connect to {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
         except Exception as e:
             logging.error(
-                f"Connection error with {self.side.capitalize()} glasses ({self.address}): {e}"
+                f"Connection error with {self.side.capitalize()} glass ({self.address}): {e}"
             )
 
     async def disconnect(self):
-        """Disconnect from the glasses device."""
+        """Disconnect from the glass device."""
         if self.client and self.client.is_connected:
             await self.client.disconnect()
+
             logging.info(
-                f"Disconnected from {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                f"Disconnected from {self.side.capitalize()} glass: {self.name} ({self.address})."
             )
+
+        # Stop heartbeat loop
+        if self.heartbeat_task:
+            logging.info(
+                f"Stopping heartbeat for {self.side.capitalize()} glass: {self.name} ({self.address})."
+            )
+            self.heartbeat_task.cancel()  # Cancel the heartbeat task
+            try:
+                await self.heartbeat_task  # Await cancellation
+            except asyncio.CancelledError:
+                logging.info(
+                    f"Heartbeat task cancelled for {self.side.capitalize()} glass: {self.name} ({self.address})."
+                )
+            self.heartbeat_task = None
 
     async def discover_services(self):
         """Discover UART characteristics."""
@@ -133,11 +149,16 @@ class Glass:
                         elif char.uuid.lower() == UART_RX_CHAR_UUID.lower():
                             self.uart_rx = char.uuid
             if not self.uart_tx or not self.uart_rx:
-                logging.error(f"UART characteristics not found for {self.side.capitalize()} glasses: {self.name} ({self.address}).")
+                logging.error(
+                    f"UART characteristics not found for {self.side.capitalize()} glass: {self.name} ({self.address})."
+                )
                 await self.disconnect()
         except Exception as e:
-            logging.error(f"Service discovery error for {self.side.capitalize()} glasses ({self.address}): {e}")
+            logging.error(
+                f"Service discovery error for {self.side.capitalize()} glass ({self.address}): {e}"
+            )
             await self.disconnect()
+
     async def send_init_command(self):
         """Send initialization command."""
         if self.uart_tx:
@@ -145,11 +166,11 @@ class Glass:
             try:
                 await self.client.write_gatt_char(self.uart_tx, init_data)
                 logging.info(
-                    f"Sent initialization command to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Sent initialization command to {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
             except Exception as e:
                 logging.error(
-                    f"Failed to send init command to {self.side.capitalize()} glasses ({self.address}): {e}"
+                    f"Failed to send init command to {self.side.capitalize()} glass ({self.address}): {e}"
                 )
 
     async def start_notifications(self):
@@ -158,11 +179,11 @@ class Glass:
             try:
                 await self.client.start_notify(self.uart_rx, self.handle_notification)
                 logging.info(
-                    f"Subscribed to UART RX notifications for {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Subscribed to UART RX notifications for {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
             except Exception as e:
                 logging.error(
-                    f"Failed to subscribe to notifications for {self.side.capitalize()} glasses ({self.address}): {e}"
+                    f"Failed to subscribe to notifications for {self.side.capitalize()} glass ({self.address}): {e}"
                 )
 
     def handle_notification(self, sender, data):
@@ -173,14 +194,14 @@ class Glass:
         """Process the incoming notification data."""
         if not data:
             logging.warning(
-                f"Received empty data from {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                f"Received empty data from {self.side.capitalize()} glass: {self.name} ({self.address})."
             )
             return
 
         cmd = data[0]
         payload = data[1:]
         logging.debug(
-            f"Received command {hex(cmd)} from {self.side.capitalize()} glasses ({self.address}): {data.hex()}"
+            f"Received command {hex(cmd)} from {self.side.capitalize()} glass ({self.address}): {data.hex()}"
         )
         logging.debug(f"Payload: {payload.hex()}")
 
@@ -191,14 +212,14 @@ class Glass:
     async def handle_heartbeat_response(self, payload: bytes):
         """Handle heartbeat response."""
         logging.info(
-            f"Heartbeat acknowledged by {self.side.capitalize()} glasses: {self.name} ({self.address})."
+            f"Heartbeat from {self.side.capitalize()} glass: {self.name} ({self.address})."
         )
         self.received_ack = True
 
     async def handle_voice_data(self, payload: bytes):
         """Handle incoming voice data."""
         logging.info(
-            f"Received voice data from {self.side.capitalize()} glasses: {self.name} ({self.address}): {payload.hex()}"
+            f"Received voice data from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
         )
         self.audio_buffer += payload
         await self.save_audio()
@@ -206,7 +227,7 @@ class Glass:
     async def handle_evenai_response(self, payload: bytes):
         """Handle EvenAI response."""
         logging.info(
-            f"Received EvenAI response from {self.side.capitalize()} glasses: {self.name} ({self.address}): {payload.hex()}"
+            f"Received EvenAI response from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
         )
         self._ack_event.set()
 
@@ -215,7 +236,7 @@ class Glass:
         order = payload[0] if payload else None
         self.last_device_order = order
         logging.info(
-            f"Received device order from {self.side.capitalize()} glasses: {self.name} ({self.address}): {hex(order) if order else 'N/A'}"
+            f"Received device order from {self.side.capitalize()} glass: {self.name} ({self.address}): {hex(order) if order else 'N/A'}"
         )
         if order == DeviceOrders.DISPLAY_COMPLETE:
             self.received_ack = True
@@ -224,7 +245,7 @@ class Glass:
         """Handle unknown commands."""
         cmd = payload[0] if payload else None
         logging.warning(
-            f"Unknown command {hex(cmd) if cmd else 'N/A'} from {self.side.capitalize()} glasses: {self.name} ({self.address}): {payload.hex()}"
+            f"Unknown command {hex(cmd) if cmd else 'N/A'} from {self.side.capitalize()} glass: {self.name} ({self.address}): {payload.hex()}"
         )
 
     async def save_audio(self):
@@ -232,7 +253,7 @@ class Glass:
         try:
             if not self.audio_buffer:
                 logging.warning(
-                    f"No audio data to save for {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"No audio data to save for {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
                 return
 
@@ -246,60 +267,68 @@ class Glass:
                 wf.writeframes(self.audio_buffer)
 
             logging.info(
-                f"Saved audio to {filename} for {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                f"Saved audio to {filename} for {self.side.capitalize()} glass: {self.name} ({self.address})."
             )
             self.audio_buffer = bytearray()
 
         except Exception as e:
             logging.error(
-                f"Error saving audio for {self.side.capitalize()} glasses ({self.address}): {e}"
+                f"Error saving audio for {self.side.capitalize()} glass ({self.address}): {e}"
             )
 
     async def heartbeat_loop(self):
         """Send periodic heartbeats to maintain connection."""
-        while self.client.is_connected:
-            try:
-                heartbeat_data = struct.pack(
-                    "BBBBBB",
-                    Commands.BLE_REQ_HEARTBEAT,
-                    6 & 0xFF,  # Length low byte
-                    (6 >> 8) & 0xFF,  # Length high byte
-                    self.heartbeat_seq % 0xFF,  # Sequence number
-                    0x04,  # Status/type indicator
-                    self.heartbeat_seq % 0xFF,  # Sequence number
-                )
-                await self.client.write_gatt_char(UART_TX_CHAR_UUID, heartbeat_data)
-                logging.debug(
-                    f"Sent heartbeat to {self.side.capitalize()} glasses: {heartbeat_data.hex()}"
-                )
-                self.heartbeat_seq += 1
-                self.received_ack = False
-
-                await asyncio.sleep(5)
-                if not self.received_ack:
-                    logging.warning(
-                        f"No heartbeat ack from {self.side.capitalize()} glasses: {self.name}"
+        try:
+            while self.client.is_connected and self.heartbeat_task:
+                try:
+                    heartbeat_data = struct.pack(
+                        "BBBBBB",
+                        Commands.BLE_REQ_HEARTBEAT,
+                        6 & 0xFF,  # Length low byte
+                        (6 >> 8) & 0xFF,  # Length high byte
+                        self.heartbeat_seq % 0xFF,  # Sequence number
+                        0x04,  # Status/type indicator
+                        self.heartbeat_seq % 0xFF,  # Sequence number
                     )
+                    await self.client.write_gatt_char(UART_TX_CHAR_UUID, heartbeat_data)
+                    logging.debug(
+                        f"Sent heartbeat to {self.side.capitalize()} glass: {heartbeat_data.hex()}"
+                    )
+                    self.heartbeat_seq += 1
+                    self.received_ack = False
 
+                    await asyncio.sleep(5)
+                    if not self.received_ack:
+                        logging.warning(
+                            f"No heartbeat ack from {self.side.capitalize()} glass: {self.name}"
+                        )
+                        await self.client.disconnect()
+                        break
+                        
 
-            except Exception as e:
-                logging.error(
-                    f"Error during heartbeat with {self.side.capitalize()} glasses ({self.address}): {e}"
-                )
-                await self.client.disconnect()
-                break
+                except Exception as e:
+                    logging.error(
+                        f"Error during heartbeat with {self.side.capitalize()} glass ({self.address}): {e}"
+                    )
+                    await self.client.disconnect()
+                    break
+        except asyncio.CancelledError:
+            logging.info(
+                f"Heartbeat loop cancelled for {self.side.capitalize()} glass: {self.name} ({self.address})."
+            )
+            raise  # Re-raise to ensure the task is properly cancelled
 
     def handle_disconnection(self, client: BleakClient):
         """Handle device disconnection."""
         logging.warning(
-            f"{self.side.capitalize()} glasses disconnected: {self.name} ({self.address})."
+            f"{self.side.capitalize()} glass disconnected: {self.name} ({self.address})."
         )
         # reconnect
         asyncio.create_task(glasses.connect_glass(self))
 
     async def send_text(self, text: str, new_screen=1):
         """
-        Send text to display on glasses with proper formatting and status transitions.
+        Send text to display on glass with proper formatting and status transitions.
         """
         lines = self.format_text_lines(text)
         total_pages = (len(lines) + 4) // 5  # 5 lines per page
@@ -311,10 +340,9 @@ class Glass:
             )
             if not success:
                 logging.error(
-                    f"Failed to send initial text to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Failed to send initial text to {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
                 return False
-            await asyncio.sleep(3)
             success = await self.send_text_packet(
                 display_text, new_screen, DisplayStatus.FINAL_TEXT, 1, 1
             )
@@ -328,7 +356,7 @@ class Glass:
             )
             if not success:
                 logging.error(
-                    f"Failed to send initial text to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                    f"Failed to send initial text to {self.side.capitalize()} glass: {self.name} ({self.address})."
                 )
                 return False
             await asyncio.sleep(3)
@@ -357,7 +385,7 @@ class Glass:
                 )
                 if not success:
                     logging.error(
-                        f"Failed to send page {current_page} to {self.side.capitalize()} glasses: {self.name} ({self.address})."
+                        f"Failed to send page {current_page} to {self.side.capitalize()} glass: {self.name} ({self.address})."
                     )
                     return False
 
@@ -404,18 +432,18 @@ class Glass:
             try:
                 await self.client.write_gatt_char(UART_TX_CHAR_UUID, packet)
                 logging.debug(
-                    f"Sent text packet to {self.side.capitalize()} glasses: {packet.hex()}"
+                    f"Sent text packet to {self.side.capitalize()} glass: {packet.hex()}"
                 )
                 self.evenai_seq += 1
 
                 try:
                     await asyncio.wait_for(self._ack_event.wait(), timeout=2.0)
                     logging.debug(
-                        f"Received acknowledgment for packet {i} from {self.side.capitalize()} glasses."
+                        f"Received acknowledgment for packet {i} from {self.side.capitalize()} glass."
                     )
                 except asyncio.TimeoutError:
                     logging.error(
-                        f"Acknowledgment timeout for packet {i} from {self.side.capitalize()} glasses."
+                        f"Acknowledgment timeout for packet {i} from {self.side.capitalize()} glass."
                     )
                     return False
 
@@ -423,7 +451,7 @@ class Glass:
 
             except Exception as e:
                 logging.error(
-                    f"Error sending packet {i} to {self.side.capitalize()} glasses: {e}"
+                    f"Error sending packet {i} to {self.side.capitalize()} glass: {e}"
                 )
                 return False
 

@@ -55,7 +55,7 @@ async def main(page: ft.Page):
     async def connect_glasses(e):
         connect_button.disabled = True
         page.update()
-        await glasses.scan_and_connect(timeout=5)
+        await glasses.scan_and_connect(timeout=10)
         connect_button.disabled = False
         page.update()
 
