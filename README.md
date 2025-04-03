@@ -3,7 +3,7 @@
 
 ## Even AI
 The general process of the Even AI function is as follows: After the app and glasses are 
-connected via dual Bluetooth, long press the left-side TouchBar on the glasses to enter the 
+connected via dual Bluetooth, long press the left-side TouchBar on the glasses to enter the javac –version
 Even AI activation state. At this point, the app will receive the [0xF5, 0x17] command from the 
 glasses. The app then needs to send a command [0x0E, 0x01] to the glasses to activate the 
 right-side microphone for recording. Once the microphone is successfully activated, the app 

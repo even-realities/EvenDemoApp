@@ -1,18 +1,37 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    
-    <!-- Bluetooth  -->
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.demo_ai_even"> <!-- Make sure this package name matches your app -->
+
+    <!-- Permissions -->
+
+    <!-- Request legacy Bluetooth permissions on older devices. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+    <!-- Request nearby devices permission on Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Location permissions (needed for scanning pre-Android 12, potentially still needed/useful after) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- Internet permission (for audio streaming examples or other network needs) -->
     <uses-permission android:name="android.permission.INTERNET" />
-   
+
+    <!-- Add FOREGROUND_SERVICE and WAKE_LOCK only if implementing background audio (which we aren't currently for external control) -->
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
+    <!-- <uses-permission android:name="android.permission.WAKE_LOCK"/> -->
+
+    <!-- End Permissions -->
+
+
     <application
-        android:label="demo_ai_even"
+        android:label="Even G1 Demo" <!-- Changed Label slightly -->
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"> <!-- Default launcher icon -->
+
+        <!-- Main Flutter Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -35,21 +54,40 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
+        <!-- *********************************************** -->
+        <!-- *** DECLARATION FOR MediaListenerService *** -->
+        <!-- *********************************************** -->
+        <service
+            android:name=".media.MediaListenerService" <!-- Make sure this path is correct -->
+            android:exported="false" />
+            <!-- If targeting SDK 34+ consider adding foregroundServiceType -->
+            <!-- <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                  android:value="explanation_for_foreground_service_use" /> -->
+        <!-- *********************************************** -->
+
+
+        <!-- Don't delete the meta-data below. -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-    </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    </application>
+
+    <!-- Required to query activities that can process text -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- If targeting Android 11 (API 30) or higher, you might need package visibility
+             rules to see MediaBrowserService implementations from other apps, although
+             MediaSessionManager might work differently. Add if needed. -->
+        <!--
+        <intent>
+          <action android:name="android.media.browse.MediaBrowserService" />
+        </intent>
+        -->
     </queries>
+
 </manifest>
