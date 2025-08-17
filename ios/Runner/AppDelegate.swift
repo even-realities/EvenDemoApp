@@ -65,6 +65,11 @@ import Flutter
         let eventSpeechRecognizeEvent = FlutterEventChannel(name: "eventSpeechRecognize", binaryMessenger: messenger)
         eventSpeechRecognizeEvent.setStreamHandler(self)
 
+        // Game Controller event channel
+        let controllerEvent = FlutterEventChannel(name: "eventController", binaryMessenger: messenger)
+        controllerEvent.setStreamHandler(self)
+        ControllerManager.shared.start()
+
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 }
@@ -79,6 +84,8 @@ extension AppDelegate : FlutterStreamHandler {
             self.blueInstance.blueInfoSink = events
         } else if (arguments as? String == "eventSpeechRecognize") {
             BluetoothManager.shared.blueSpeechSink = events
+      } else if (arguments as? String == "eventController") {
+          ControllerManager.shared.controllerSink = events
         } else {
             // TODO
         }

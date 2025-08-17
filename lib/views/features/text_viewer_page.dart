@@ -1,6 +1,7 @@
 
 import 'package:demo_ai_even/services/custom_text_service.dart';
 import 'package:demo_ai_even/services/local_file_service.dart';
+import 'package:demo_ai_even/services/controller_events.dart';
 import 'package:flutter/material.dart';
 
 class TextViewerPage extends StatefulWidget {
@@ -22,6 +23,28 @@ class _TextViewerPageState extends State<TextViewerPage> {
     super.initState();
     _loadFile();
     _textService.onPageChanged = () => setState(() {});
+
+    // ゲームパッドのイベントを購読してトリガーに割り当て
+    ControllerEvents().stream.listen((event) {
+      final control = event['control'] as String?;
+      if (control == null) return;
+      switch (control) {
+        case 'dpadRight':
+        case 'buttonA':
+          _textService.sendNextPage();
+          break;
+        case 'dpadLeft':
+        case 'buttonB':
+          _textService.sendPreviousPage();
+          break;
+        case 'dpadUp':
+          _toggleAutoScroll(true);
+          break;
+        case 'dpadDown':
+          _toggleAutoScroll(false);
+          break;
+      }
+    });
   }
 
   @override
