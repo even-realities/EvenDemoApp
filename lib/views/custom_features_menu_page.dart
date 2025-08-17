@@ -1,0 +1,48 @@
+import 'package:demo_ai_even/views/features/custom_text_reader_page.dart';
+import 'package:demo_ai_even/views/features/voice_asr_page.dart';
+import 'package:flutter/material.dart';
+
+class CustomFeaturesMenuPage extends StatelessWidget {
+  const CustomFeaturesMenuPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('カスタム機能')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CustomTextReaderPage(),
+                    ),
+                  );
+                },
+                child: const Text('テキスト機能'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const VoiceAsrPage(),
+                    ),
+                  );
+                },
+                child: const Text('音声機能（ASR）'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

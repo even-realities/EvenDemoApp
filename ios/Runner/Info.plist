@@ -32,6 +32,8 @@
 	<string>Permission to pick image from photo library</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>The speech inquiry feature requires converting voice content to text and then returning the result to the device.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app uses the microphone for speech recognition.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

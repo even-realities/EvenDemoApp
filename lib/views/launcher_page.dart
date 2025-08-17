@@ -1,5 +1,5 @@
 
-import 'package:demo_ai_even/views/features/custom_text_reader_page.dart';
+import 'package:demo_ai_even/views/custom_features_menu_page.dart';
 import 'package:demo_ai_even/views/home_page.dart';
 import 'package:flutter/material.dart';
 
@@ -30,7 +30,7 @@ class LauncherPage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CustomTextReaderPage()),
+                  MaterialPageRoute(builder: (context) => const CustomFeaturesMenuPage()),
                 );
               },
               child: const Text('カスタム機能 (Custom Features)'),
