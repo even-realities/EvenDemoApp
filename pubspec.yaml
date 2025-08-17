@@ -48,6 +48,7 @@ dependencies:
   path_provider: ^2.1.5
   speech_to_text: ^6.6.2
   shared_preferences: ^2.3.2
+  yaml: ^3.1.2
 
 
 dev_dependencies:

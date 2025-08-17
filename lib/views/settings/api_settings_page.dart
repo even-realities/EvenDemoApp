@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:demo_ai_even/services/openapi_parser.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'package:demo_ai_even/services/api_client.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +58,29 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
     }
   }
 
+  Future<void> _importOpenApi() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['yaml', 'yml', 'json'],
+      withData: true,
+    );
+    if (result == null) return;
+    final picked = result.files.single;
+    final bytes = picked.bytes ?? await picked.xFile.readAsBytes();
+    final content = utf8.decode(bytes, allowMalformed: true);
+    SwaggerImportResult parsed;
+    if (picked.extension?.toLowerCase() == 'json') {
+      parsed = OpenApiParser.fromJson(content);
+    } else {
+      parsed = OpenApiParser.fromYaml(content);
+    }
+    setState(() {
+      if (parsed.baseUrl != null) _baseUrl.text = parsed.baseUrl!;
+      if (parsed.firstPostPath != null) _path.text = parsed.firstPostPath!;
+      if (parsed.textFieldName != null) _textFieldName.text = parsed.textFieldName!;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,6 +91,14 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           key: _formKey,
           child: ListView(
             children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _importOpenApi,
+                  icon: const Icon(Icons.file_open),
+                  label: const Text('OpenAPI/Swagger をインポート'),
+                ),
+              ),
               TextFormField(
                 controller: _baseUrl,
                 decoration: const InputDecoration(labelText: 'Base URL (例: https://example.com)'),
