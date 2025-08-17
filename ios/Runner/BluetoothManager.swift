@@ -63,17 +63,31 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             return
         }
 
-        guard let leftPeripheral = peripheralPair.0, let rightPeripheral = peripheralPair.1 else {
-            result(FlutterError(code: "PeripheralNotFound", message: "One or both peripherals are not found", details: nil))
-            return
-        }
-
         currentConnectingDeviceName = deviceName // Save the current device being connected
 
-        centralManager.connect(leftPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true]) //   options nil
-        centralManager.connect(rightPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true]) //   options nil
+        var didAttempt = false
 
-        result("Connecting to \(deviceName)...")
+        if let leftPeripheral = peripheralPair.0 {
+            // Connect left if not already connected
+            if connectedDevices[deviceName]?.0 == nil {
+                centralManager.connect(leftPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                didAttempt = true
+            }
+        }
+
+        if let rightPeripheral = peripheralPair.1 {
+            // Connect right if not already connected
+            if connectedDevices[deviceName]?.1 == nil {
+                centralManager.connect(rightPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                didAttempt = true
+            }
+        }
+
+        if didAttempt {
+            result("Connecting to \(deviceName)...")
+        } else {
+            result(FlutterError(code: "PeripheralNotFound", message: "No peripherals available to connect", details: nil))
+        }
     }
 
     func disconnectFromGlasses(result: @escaping FlutterResult) {
@@ -163,6 +177,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         }
         
         central.connect(peripheral, options: nil)
+    }
+
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        print("didFailToConnect peripheral: \(String(describing: peripheral.name)) error: \(String(describing: error?.localizedDescription))")
+        // Optionally notify Flutter side to refresh UI/state
+        channel.invokeMethod("glassesDisconnected", arguments: nil)
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {

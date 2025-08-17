@@ -117,9 +117,17 @@ class _HomePageState extends State<HomePage> {
             children: [
               GestureDetector(
                 onTap: () async {
-                  if (BleManager.get().getConnectionStatus() ==
-                      'Not connected') {
+                  if (BleManager.get().getConnectionStatus() == 'Not connected') {
                     _startScan();
+                  } else if (BleManager.get().getConnectionStatus().startsWith('Connected') == false) {
+                    // 再接続トライ: 直前に検出したペアを対象
+                    final pairs = BleManager.get().getPairedGlasses();
+                    if (pairs.isNotEmpty) {
+                      final channelNumber = pairs.first['channelNumber']!;
+                      await BleManager.get().connectToGlasses("Pair_$channelNumber");
+                    } else {
+                      _startScan();
+                    }
                   }
                 },
                 child: Container(
