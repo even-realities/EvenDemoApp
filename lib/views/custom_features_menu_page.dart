@@ -1,5 +1,6 @@
 import 'package:demo_ai_even/views/features/custom_text_reader_page.dart';
 import 'package:demo_ai_even/views/features/voice_asr_page.dart';
+import 'package:demo_ai_even/views/settings/api_settings_page.dart';
 import 'package:flutter/material.dart';
 
 class CustomFeaturesMenuPage extends StatelessWidget {
@@ -38,6 +39,18 @@ class CustomFeaturesMenuPage extends StatelessWidget {
                   );
                 },
                 child: const Text('音声機能（ASR）'),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ApiSettingsPage(),
+                    ),
+                  );
+                },
+                child: const Text('API設定'),
               ),
             ],
           ),

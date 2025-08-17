@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:demo_ai_even/services/api_client.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class VoiceAsrPage extends StatefulWidget {
@@ -12,11 +14,13 @@ class VoiceAsrPage extends StatefulWidget {
 
 class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final stt.SpeechToText _speech = stt.SpeechToText();
+  final ApiClient _api = ApiClient();
   bool _available = false;
   bool _listening = false;
   String _localeId = 'ja_JP';
   String _partialText = '';
   final StringBuffer _finalBuffer = StringBuffer();
+  ApiConfig? _config;
 
   @override
   void initState() {
@@ -42,6 +46,10 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
         _localeId = ja.localeId;
       });
     }
+
+    // load API config
+    final cfg = await _api.loadConfig();
+    setState(() => _config = cfg);
   }
 
   Future<void> _start() async {
@@ -71,6 +79,22 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     setState(() {
       _listening = false;
     });
+  }
+
+  Future<void> _sendAllText() async {
+    final cfg = _config;
+    if (cfg == null) return;
+    final text = _finalBuffer.toString().trim();
+    if (text.isEmpty) {
+      Fluttertoast.showToast(msg: '送信するテキストがありません');
+      return;
+    }
+    try {
+      final resp = await _api.postText(config: cfg, text: text);
+      Fluttertoast.showToast(msg: '送信成功: ${resp.statusCode}');
+    } catch (e) {
+      Fluttertoast.showToast(msg: '送信失敗: $e');
+    }
   }
 
   @override
@@ -127,6 +151,10 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
                 ElevatedButton(
                   onPressed: _listening ? _stop : null,
                   child: const Text('停止'),
+                ),
+                ElevatedButton(
+                  onPressed: _sendAllText,
+                  child: const Text('API送信'),
                 ),
                 ElevatedButton(
                   onPressed: () {
