@@ -31,11 +31,22 @@ class _TextViewerPageState extends State<TextViewerPage> {
       switch (control) {
         case 'dpadRight':
         case 'buttonA':
+        case 'rightShoulder':
+        case 'rightTrigger':
           _textService.sendNextPage();
           break;
         case 'dpadLeft':
         case 'buttonB':
+        case 'leftShoulder':
+        case 'leftTrigger':
           _textService.sendPreviousPage();
+          break;
+        case 'buttonY':
+        case 'pauseButton':
+          _toggleAutoScroll(false);
+          break;
+        case 'buttonX':
+          _toggleAutoScroll(true);
           break;
         case 'dpadUp':
           _toggleAutoScroll(true);

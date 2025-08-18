@@ -40,6 +40,10 @@ class ControllerManager {
     }
 
     private func setupHandler(controller: GCController) {
+        controller.controllerPausedHandler = { [weak self] _ in
+            self?.sendEvent(["type": "controller", "control": "pauseButton", "pressed": true])
+        }
+
         controller.extendedGamepad?.valueChangedHandler = { [weak self] gamepad, element in
             guard let self = self else { return }
             var control: String?
@@ -54,6 +58,8 @@ class ControllerManager {
                 case gamepad.buttonY: control = "buttonY"
                 case gamepad.leftShoulder: control = "leftShoulder"
                 case gamepad.rightShoulder: control = "rightShoulder"
+                case gamepad.leftTrigger: control = "leftTrigger"
+                case gamepad.rightTrigger: control = "rightTrigger"
                 default: break
                 }
             } else if let dpad = element as? GCControllerDirectionPad {
