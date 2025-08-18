@@ -1,6 +1,7 @@
 import 'package:demo_ai_even/views/features/custom_text_reader_page.dart';
 import 'package:demo_ai_even/views/features/voice_asr_page.dart';
 import 'package:demo_ai_even/views/settings/api_settings_page.dart';
+import 'package:demo_ai_even/views/settings/input_mapping_page.dart';
 import 'package:flutter/material.dart';
 
 class CustomFeaturesMenuPage extends StatelessWidget {
@@ -51,6 +52,18 @@ class CustomFeaturesMenuPage extends StatelessWidget {
                   );
                 },
                 child: const Text('API設定'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const InputMappingPage(),
+                    ),
+                  );
+                },
+                child: const Text('入力マッピング設定'),
               ),
             ],
           ),

@@ -2,6 +2,7 @@
 import 'package:demo_ai_even/services/custom_text_service.dart';
 import 'package:demo_ai_even/services/local_file_service.dart';
 import 'package:demo_ai_even/services/controller_events.dart';
+import 'package:demo_ai_even/services/input_mapping_service.dart';
 import 'package:flutter/material.dart';
 
 class TextViewerPage extends StatefulWidget {
@@ -25,58 +26,41 @@ class _TextViewerPageState extends State<TextViewerPage> {
     _textService.onPageChanged = () => setState(() {});
 
     // ゲームパッドのイベントを購読してトリガーに割り当て
+    final mapping = InputMappingService.instance;
+    mapping.load();
     ControllerEvents().stream.listen((event) {
       final control = event['control'] as String?;
       if (control == null) return;
-      switch (control) {
-        case 'dpadRight':
-        case 'buttonA':
-        case 'rightShoulder':
-        case 'rightTrigger':
-          _textService.sendNextPage();
-          break;
-        case 'dpadLeft':
-        case 'buttonB':
-        case 'leftShoulder':
-        case 'leftTrigger':
-          _textService.sendPreviousPage();
-          break;
-        case 'buttonY':
-        case 'pauseButton':
-          _toggleAutoScroll(false);
-          break;
-        case 'buttonX':
-          _toggleAutoScroll(true);
-          break;
-        case 'dpadUp':
-          _toggleAutoScroll(true);
-          break;
-        case 'dpadDown':
-          _toggleAutoScroll(false);
-          break;
-      }
+      final action = mapping.actionForControl(control);
+      _handleAction(action);
     });
 
     // リモートコマンド（オーディオコントローラ/イヤホン操作）
     ControllerEvents().remoteStream.listen((event) {
       final control = event['control'] as String?;
       if (control == null) return;
-      switch (control) {
-        case 'nextTrack':
-          _textService.sendNextPage();
-          break;
-        case 'previousTrack':
-          _textService.sendPreviousPage();
-          break;
-        case 'play':
-        case 'togglePlayPause':
-          _toggleAutoScroll(true);
-          break;
-        case 'pause':
-          _toggleAutoScroll(false);
-          break;
-      }
+      final action = mapping.actionForControl(control);
+      _handleAction(action);
     });
+  }
+
+  void _handleAction(ReaderAction? action) {
+    switch (action) {
+      case ReaderAction.nextPage:
+        _textService.sendNextPage();
+        break;
+      case ReaderAction.previousPage:
+        _textService.sendPreviousPage();
+        break;
+      case ReaderAction.autoScrollStart:
+        _toggleAutoScroll(true);
+        break;
+      case ReaderAction.autoScrollStop:
+        _toggleAutoScroll(false);
+        break;
+      default:
+        break;
+    }
   }
 
   @override
