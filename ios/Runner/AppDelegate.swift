@@ -70,6 +70,11 @@ import Flutter
         controllerEvent.setStreamHandler(self)
         ControllerManager.shared.start()
 
+        // Remote Command Center (audio controller) event channel
+        let remoteEvent = FlutterEventChannel(name: "eventRemote", binaryMessenger: messenger)
+        remoteEvent.setStreamHandler(self)
+        RemoteCommandManager.shared.start()
+
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 }
@@ -86,6 +91,8 @@ extension AppDelegate : FlutterStreamHandler {
             BluetoothManager.shared.blueSpeechSink = events
       } else if (arguments as? String == "eventController") {
           ControllerManager.shared.controllerSink = events
+      } else if (arguments as? String == "eventRemote") {
+          RemoteCommandManager.shared.remoteSink = events
         } else {
             // TODO
         }

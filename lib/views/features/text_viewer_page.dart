@@ -45,6 +45,27 @@ class _TextViewerPageState extends State<TextViewerPage> {
           break;
       }
     });
+
+    // リモートコマンド（オーディオコントローラ/イヤホン操作）
+    ControllerEvents().remoteStream.listen((event) {
+      final control = event['control'] as String?;
+      if (control == null) return;
+      switch (control) {
+        case 'nextTrack':
+          _textService.sendNextPage();
+          break;
+        case 'previousTrack':
+          _textService.sendPreviousPage();
+          break;
+        case 'play':
+        case 'togglePlayPause':
+          _toggleAutoScroll(true);
+          break;
+        case 'pause':
+          _toggleAutoScroll(false);
+          break;
+      }
+    });
   }
 
   @override
