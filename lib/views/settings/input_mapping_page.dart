@@ -1,4 +1,5 @@
 import 'package:demo_ai_even/services/input_mapping_service.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 
 class InputMappingPage extends StatefulWidget {
@@ -61,6 +62,16 @@ class _InputMappingPageState extends State<InputMappingPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // コントローラのSVGを表示（参考図）
+          Center(
+            child: SvgPicture.asset(
+              'assets/additional_images/game_controller_svg.svg',
+              height: 160,
+              semanticsLabel: 'Game Controller',
+              placeholderBuilder: (context) => const SizedBox(height: 160),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text('次ページ'),
           const SizedBox(height: 8),
           _chips(ReaderAction.nextPage),

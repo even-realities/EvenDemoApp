@@ -1,0 +1,106 @@
+<svg viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- グラデーション定義 -->
+    <radialGradient id="bodyGradient" cx="0.3" cy="0.2" r="0.8">
+      <stop offset="0%" stop-color="#ffd54f"/>
+      <stop offset="70%" stop-color="#ffb300"/>
+      <stop offset="100%" stop-color="#ff8f00"/>
+    </radialGradient>
+    
+    <radialGradient id="buttonGradient" cx="0.3" cy="0.2" r="0.8">
+      <stop offset="0%" stop-color="#f5f5f5"/>
+      <stop offset="70%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#bdbdbd"/>
+    </radialGradient>
+    
+    <radialGradient id="dpadGradient" cx="0.3" cy="0.2" r="0.8">
+      <stop offset="0%" stop-color="#f0f0f0"/>
+      <stop offset="70%" stop-color="#d0d0d0"/>
+      <stop offset="100%" stop-color="#a0a0a0"/>
+    </radialGradient>
+    
+    <!-- ドロップシャドウ -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="#00000040"/>
+    </filter>
+    
+    <filter id="buttonShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#00000030"/>
+    </filter>
+  </defs>
+  
+  <!-- コントローラー本体 -->
+  <path d="M80 80 C80 50, 110 20, 150 20 L350 20 C390 20, 420 50, 420 80 L420 120 C420 150, 390 180, 350 180 L150 180 C110 180, 80 150, 80 120 Z" 
+        fill="url(#bodyGradient)" filter="url(#dropShadow)"/>
+  
+  <!-- 本体のハイライト -->
+  <path d="M90 85 C90 60, 115 35, 145 35 L355 35 C385 35, 410 60, 410 85 L410 115 C410 140, 385 165, 355 165 L145 165 C115 165, 90 140, 90 115 Z" 
+        fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+  
+  <!-- 十字キー -->
+  <g transform="translate(150,100)">
+    <!-- 十字キー本体 -->
+    <path d="M-8 -24 L8 -24 L8 -8 L24 -8 L24 8 L8 8 L8 24 L-8 24 L-8 8 L-24 8 L-24 -8 L-8 -8 Z" 
+          fill="url(#dpadGradient)" filter="url(#buttonShadow)"/>
+    <!-- 十字キーの溝 -->
+    <path d="M-6 -22 L6 -22 L6 -6 L22 -6 L22 6 L6 6 L6 22 L-6 22 L-6 6 L-22 6 L-22 -6 L-6 -6 Z" 
+          fill="none" stroke="#999" stroke-width="0.5"/>
+    <!-- 上下の矢印マーク -->
+    <polygon points="0,-15 -4,-10 4,-10" fill="#666"/>
+    <polygon points="0,15 -4,10 4,10" fill="#666"/>
+  </g>
+  
+  <!-- アクションボタン -->
+  <g transform="translate(350,100)">
+    <!-- Y（上） -->
+    <circle cx="0" cy="-25" r="16" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <circle cx="0" cy="-25" r="14" fill="none" stroke="#ccc" stroke-width="1"/>
+    <text x="0" y="-20" text-anchor="middle" fill="#555" font-family="Arial" font-size="14" font-weight="bold">Y</text>
+    
+    <!-- A（下） -->
+    <circle cx="0" cy="25" r="16" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <circle cx="0" cy="25" r="14" fill="none" stroke="#ccc" stroke-width="1"/>
+    <text x="0" y="30" text-anchor="middle" fill="#555" font-family="Arial" font-size="14" font-weight="bold">A</text>
+    
+    <!-- X（左） -->
+    <circle cx="-25" cy="0" r="16" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <circle cx="-25" cy="0" r="14" fill="none" stroke="#ccc" stroke-width="1"/>
+    <text x="-25" y="5" text-anchor="middle" fill="#555" font-family="Arial" font-size="14" font-weight="bold">X</text>
+    
+    <!-- B（右） -->
+    <circle cx="25" cy="0" r="16" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <circle cx="25" cy="0" r="14" fill="none" stroke="#ccc" stroke-width="1"/>
+    <text x="25" y="5" text-anchor="middle" fill="#555" font-family="Arial" font-size="14" font-weight="bold">B</text>
+  </g>
+  
+  <!-- 肩ボタン（L1, R1） -->
+  <g transform="translate(120,30)">
+    <rect x="0" y="0" width="40" height="18" rx="9" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <rect x="2" y="2" width="36" height="14" rx="7" fill="none" stroke="#ddd" stroke-width="1"/>
+    <text x="20" y="12" text-anchor="middle" fill="#555" font-family="Arial" font-size="10" font-weight="bold">L1</text>
+  </g>
+  
+  <g transform="translate(340,30)">
+    <rect x="0" y="0" width="40" height="18" rx="9" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <rect x="2" y="2" width="36" height="14" rx="7" fill="none" stroke="#ddd" stroke-width="1"/>
+    <text x="20" y="12" text-anchor="middle" fill="#555" font-family="Arial" font-size="10" font-weight="bold">R1</text>
+  </g>
+  
+  <!-- 中央ボタン（Select/Start） -->
+  <g transform="translate(210,110)">
+    <!-- Select -->
+    <rect x="0" y="0" width="36" height="14" rx="7" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <rect x="1" y="1" width="34" height="12" rx="6" fill="none" stroke="#ddd" stroke-width="0.5"/>
+    <text x="18" y="9" text-anchor="middle" fill="#555" font-family="Arial" font-size="8" font-weight="bold">SELECT</text>
+    
+    <!-- Start -->
+    <rect x="40" y="0" width="36" height="14" rx="7" fill="url(#buttonGradient)" filter="url(#buttonShadow)"/>
+    <rect x="41" y="1" width="34" height="12" rx="6" fill="none" stroke="#ddd" stroke-width="0.5"/>
+    <text x="58" y="9" text-anchor="middle" fill="#555" font-family="Arial" font-size="8" font-weight="bold">START</text>
+  </g>
+  
+  <!-- ブランドロゴ風の装飾 -->
+  <text x="250" y="85" text-anchor="middle" fill="#fff" font-family="Arial" font-size="12" font-weight="bold" opacity="0.8">8BitDo</text>
+  <line x1="220" y1="90" x2="280" y2="90" stroke="#fff" stroke-width="1" opacity="0.6"/>
+  <text x="250" y="105" text-anchor="middle" fill="#fff" font-family="Arial" font-size="10" opacity="0.7">Zero 2</text>
+</svg>
