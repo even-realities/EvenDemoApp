@@ -29,6 +29,15 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   @override
   void initState() {
     super.initState();
+    // iOSでの再生を安定させるためのオーディオセッション設定
+    AudioPlayer.global.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: {AVAudioSessionOptions.mixWithOthers},
+        ),
+      ),
+    );
     _initSpeech();
   }
 
@@ -116,7 +125,8 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
       final resp = await _eleven.synthesize(config: cfg, text: text);
       if (resp.statusCode == 200 && resp.data != null && resp.data!.isNotEmpty) {
         Fluttertoast.showToast(msg: 'ElevenLabs送信成功（再生開始）');
-        await _player.play(BytesSource(resp.data!));
+        // mp3のmimeTypeを明示し、iOSのデコーダにヒントを与える
+        await _player.play(BytesSource(resp.data!, mimeType: 'audio/mpeg'));
       } else {
         Fluttertoast.showToast(msg: 'ElevenLabs送信失敗: ${resp.statusCode}');
       }
@@ -155,7 +165,8 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
               ],
             ),
             const SizedBox(height: 12),
-            Expanded(
+            SizedBox(
+              height: 220,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -170,8 +181,10 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
               children: [
                 ElevatedButton(
                   onPressed: _listening ? null : _start,
