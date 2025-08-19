@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:demo_ai_even/services/api_client.dart';
+import 'package:demo_ai_even/services/elevenlabs_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -15,6 +16,7 @@ class VoiceAsrPage extends StatefulWidget {
 class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ApiClient _api = ApiClient();
+  final ElevenLabsService _eleven = ElevenLabsService();
   bool _available = false;
   bool _listening = false;
   String _localeId = 'ja_JP';
@@ -97,6 +99,30 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     }
   }
 
+  Future<void> _sendToElevenLabs() async {
+    final text = _finalBuffer.toString().trim();
+    if (text.isEmpty) {
+      Fluttertoast.showToast(msg: '送信するテキストがありません');
+      return;
+    }
+    final cfg = await _eleven.loadConfig();
+    if (cfg.apiKey.isEmpty || cfg.voiceId.isEmpty) {
+      Fluttertoast.showToast(msg: 'ElevenLabs設定が未入力です');
+      return;
+    }
+    try {
+      final resp = await _eleven.synthesize(config: cfg, text: text);
+      if (resp.statusCode == 200 && resp.data.isNotEmpty) {
+        Fluttertoast.showToast(msg: 'ElevenLabs送信成功');
+        // TODO: 必要なら音声再生 or G1 へ転送（将来）
+      } else {
+        Fluttertoast.showToast(msg: 'ElevenLabs送信失敗: ${resp.statusCode}');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'ElevenLabsエラー: $e');
+    }
+  }
+
   @override
   void dispose() {
     _speech.cancel();
@@ -155,6 +181,10 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
                 ElevatedButton(
                   onPressed: _sendAllText,
                   child: const Text('API送信'),
+                ),
+                ElevatedButton(
+                  onPressed: _sendToElevenLabs,
+                  child: const Text('ElevenLabsへ送信'),
                 ),
                 ElevatedButton(
                   onPressed: () {
