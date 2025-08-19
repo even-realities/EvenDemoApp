@@ -5,6 +5,7 @@ import 'package:demo_ai_even/services/api_client.dart';
 import 'package:demo_ai_even/services/elevenlabs_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:audioplayers/audioplayers.dart';
 
 class VoiceAsrPage extends StatefulWidget {
   const VoiceAsrPage({super.key});
@@ -17,6 +18,7 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ApiClient _api = ApiClient();
   final ElevenLabsService _eleven = ElevenLabsService();
+  final AudioPlayer _player = AudioPlayer();
   bool _available = false;
   bool _listening = false;
   String _localeId = 'ja_JP';
@@ -113,8 +115,8 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     try {
       final resp = await _eleven.synthesize(config: cfg, text: text);
       if (resp.statusCode == 200 && resp.data != null && resp.data!.isNotEmpty) {
-        Fluttertoast.showToast(msg: 'ElevenLabs送信成功');
-        // TODO: 必要なら音声再生 or G1 へ転送（将来）
+        Fluttertoast.showToast(msg: 'ElevenLabs送信成功（再生開始）');
+        await _player.play(BytesSource(resp.data!));
       } else {
         Fluttertoast.showToast(msg: 'ElevenLabs送信失敗: ${resp.statusCode}');
       }
@@ -126,6 +128,7 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   @override
   void dispose() {
     _speech.cancel();
+    _player.dispose();
     super.dispose();
   }
 

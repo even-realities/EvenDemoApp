@@ -107,7 +107,12 @@ class _ElevenLabsSettingsPageState extends State<ElevenLabsSettingsPage> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _voices.any((v) => v.id == _voiceId.text) ? _voiceId.text : null,
-              items: _voices.map((v) => DropdownMenuItem(value: v.id, child: Text('${v.name} (${v.id.substring(0, v.id.length > 6 ? 6 : v.id.length)})'))).toList(),
+              items: _voices
+                  .map((v) => DropdownMenuItem(
+                        value: v.id,
+                        child: Text('${v.name}  •  ${v.id}'),
+                      ))
+                  .toList(),
               onChanged: (v) => setState(() => _voiceId.text = v ?? _voiceId.text),
               decoration: const InputDecoration(labelText: 'Voice'),
             ),
