@@ -112,7 +112,7 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     }
     try {
       final resp = await _eleven.synthesize(config: cfg, text: text);
-      if (resp.statusCode == 200 && resp.data.isNotEmpty) {
+      if (resp.statusCode == 200 && resp.data != null && resp.data!.isNotEmpty) {
         Fluttertoast.showToast(msg: 'ElevenLabs送信成功');
         // TODO: 必要なら音声再生 or G1 へ転送（将来）
       } else {
