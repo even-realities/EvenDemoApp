@@ -12,7 +12,9 @@ class _ElevenLabsSettingsPageState extends State<ElevenLabsSettingsPage> {
   final _formKey = GlobalKey<FormState>();
   final _apiKey = TextEditingController();
   final _voiceId = TextEditingController();
-  final _modelId = TextEditingController(text: 'eleven_v3');
+  String? _modelId;
+  List<ElevenModel> _models = const [];
+  List<ElevenVoice> _voices = const [];
   double _stability = 0.5;
   double _similarity = 0.5;
   String _outputFormat = 'mp3_44100_128';
@@ -30,18 +32,30 @@ class _ElevenLabsSettingsPageState extends State<ElevenLabsSettingsPage> {
     setState(() {
       _apiKey.text = cfg.apiKey;
       _voiceId.text = cfg.voiceId;
-      _modelId.text = cfg.modelId;
+      _modelId = cfg.modelId;
       _stability = cfg.stability;
       _similarity = cfg.similarityBoost;
       _outputFormat = cfg.outputFormat;
     });
+    // fetch models/voices if apiKey present
+    if (_apiKey.text.isNotEmpty) {
+      try {
+        final models = await _service.listModels(_apiKey.text.trim());
+        final voices = await _service.listVoices(_apiKey.text.trim());
+        setState(() {
+          _models = models;
+          _voices = voices;
+          _modelId ??= models.firstWhere((m) => m.id == 'eleven_multilingual_v2', orElse: () => models.first).id;
+        });
+      } catch (_) {}
+    }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final cfg = ElevenLabsConfig(
       apiKey: _apiKey.text.trim(),
-      modelId: _modelId.text.trim(),
+      modelId: (_modelId ?? 'eleven_multilingual_v2').trim(),
       voiceId: _voiceId.text.trim(),
       stability: _stability,
       similarityBoost: _similarity,
@@ -58,6 +72,25 @@ class _ElevenLabsSettingsPageState extends State<ElevenLabsSettingsPage> {
         title: const Text('ElevenLabs 設定'),
         actions: [
           IconButton(onPressed: _save, icon: const Icon(Icons.save)),
+          IconButton(
+            onPressed: () async {
+              if (_apiKey.text.trim().isEmpty) return;
+              try {
+                final models = await _service.listModels(_apiKey.text.trim());
+                final voices = await _service.listVoices(_apiKey.text.trim());
+                setState(() {
+                  _models = models;
+                  _voices = voices;
+                  _modelId ??= models.firstWhere((m) => m.id == 'eleven_multilingual_v2', orElse: () => models.first).id;
+                });
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('取得に失敗しました: $e')));
+              }
+            },
+            icon: const Icon(Icons.refresh),
+            tooltip: 'モデル/ボイスを取得',
+          ),
         ],
       ),
       body: Form(
@@ -72,16 +105,32 @@ class _ElevenLabsSettingsPageState extends State<ElevenLabsSettingsPage> {
               validator: (v) => (v == null || v.isEmpty) ? '必須です' : null,
             ),
             const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _voices.any((v) => v.id == _voiceId.text) ? _voiceId.text : null,
+              items: _voices.map((v) => DropdownMenuItem(value: v.id, child: Text('${v.name} (${v.id.substring(0, v.id.length > 6 ? 6 : v.id.length)})'))).toList(),
+              onChanged: (v) => setState(() => _voiceId.text = v ?? _voiceId.text),
+              decoration: const InputDecoration(labelText: 'Voice'),
+            ),
             TextFormField(
               controller: _voiceId,
-              decoration: const InputDecoration(labelText: 'Voice ID'),
+              decoration: const InputDecoration(labelText: 'Voice ID（直接入力も可）'),
               validator: (v) => (v == null || v.isEmpty) ? '必須です' : null,
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _modelId,
-              decoration: const InputDecoration(labelText: 'Model ID (例: eleven_v3, eleven_multilingual_v2)'),
-              validator: (v) => (v == null || v.isEmpty) ? '必須です' : null,
+            DropdownButtonFormField<String>(
+              value: _modelId ?? 'eleven_multilingual_v2',
+              items: (_models.isNotEmpty
+                      ? _models
+                      : [
+                          ElevenModel(id: 'eleven_multilingual_v2', name: 'eleven_multilingual_v2 (recommended)'),
+                          ElevenModel(id: 'eleven_v3', name: 'eleven_v3'),
+                          ElevenModel(id: 'eleven_flash_v2_5', name: 'eleven_flash_v2_5'),
+                          ElevenModel(id: 'eleven_turbo_v2_5', name: 'eleven_turbo_v2_5'),
+                        ])
+                  .map((m) => DropdownMenuItem(value: m.id, child: Text(m.name)))
+                  .toList(),
+              onChanged: (v) => setState(() => _modelId = v ?? _modelId),
+              decoration: const InputDecoration(labelText: 'Model'),
             ),
             const SizedBox(height: 12),
             const Text('Stability'),
