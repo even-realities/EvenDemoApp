@@ -56,6 +56,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -78,6 +79,32 @@ flutter:
   assets:
     - assets/images/
     - assets/additional_images/
+
+# App icons per flavor (requires images you provide)
+flutter_launcher_icons:
+  ios: true
+  android: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/app_icon_prod.png"
+  image_path_ios: "assets/app_icon_prod.png"
+  image_path_android: "assets/app_icon_prod.png"
+  min_sdk_android: 21
+  flavors:
+    dev:
+      ios: true
+      android: true
+      adaptive_icon_background: "#673AB7"
+      adaptive_icon_foreground: "assets/app_icon_dev.png"
+      image_path_ios: "assets/app_icon_dev.png"
+      image_path_android: "assets/app_icon_dev.png"
+    prod:
+      ios: true
+      android: true
+      adaptive_icon_background: "#FFFFFF"
+      adaptive_icon_foreground: "assets/app_icon_prod.png"
+      image_path_ios: "assets/app_icon_prod.png"
+      image_path_android: "assets/app_icon_prod.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:
