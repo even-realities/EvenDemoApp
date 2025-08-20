@@ -128,29 +128,31 @@ class _ControllerHotmap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = selectedProvider();
-    // 正規化座標（0..1）で定義し、実表示サイズにスケール
-    final normalized = <String, Rect>{
-      // 左右ショルダー/トリガー（上部）
-      'leftShoulder': const Rect.fromLTWH(0.08, 0.06, 0.22, 0.10),
-      'rightShoulder': const Rect.fromLTWH(0.70, 0.06, 0.22, 0.10),
-      'leftTrigger': const Rect.fromLTWH(0.08, 0.16, 0.22, 0.09),
-      'rightTrigger': const Rect.fromLTWH(0.70, 0.16, 0.22, 0.09),
-      // D-Pad（左）
-      'dpadLeft': const Rect.fromLTWH(0.15, 0.52, 0.10, 0.15),
-      'dpadRight': const Rect.fromLTWH(0.27, 0.52, 0.10, 0.15),
-      'dpadUp': const Rect.fromLTWH(0.21, 0.44, 0.10, 0.15),
-      'dpadDown': const Rect.fromLTWH(0.21, 0.60, 0.10, 0.15),
-      // ABXY（右）
-      'buttonB': const Rect.fromLTWH(0.62, 0.52, 0.10, 0.15),
-      'buttonA': const Rect.fromLTWH(0.74, 0.52, 0.10, 0.15),
-      'buttonY': const Rect.fromLTWH(0.68, 0.44, 0.10, 0.15),
-      'buttonX': const Rect.fromLTWH(0.68, 0.60, 0.10, 0.15),
-      // メニュー
-      'pauseButton': const Rect.fromLTWH(0.45, 0.50, 0.10, 0.08),
-      // リモート（下部）
-      'previousTrack': const Rect.fromLTWH(0.20, 0.88, 0.16, 0.08),
-      'play': const Rect.fromLTWH(0.42, 0.88, 0.16, 0.08),
-      'nextTrack': const Rect.fromLTWH(0.64, 0.88, 0.16, 0.08),
+    // viewBox: 0 0 500 220 を基準に実座標で定義
+    // D-Pad 原点(150,100), 腕の外形は約 -24..24 / 中央幹は約 -8..8
+    final rectsViewBox = <String, Rect>{
+      // Shoulders (L1/R1)
+      'leftShoulder': const Rect.fromLTWH(120, 30, 40, 18),
+      'rightShoulder': const Rect.fromLTWH(340, 30, 40, 18),
+      // Triggers（SVGに明示は無いので肩の手前/奥を擬似配置）
+      'leftTrigger': const Rect.fromLTWH(120, 52, 40, 14),
+      'rightTrigger': const Rect.fromLTWH(340, 52, 40, 14),
+      // D-Pad quadrants around (150,100)
+      'dpadLeft': const Rect.fromLTWH(150 - 24, 100 - 8, 16, 16),
+      'dpadRight': const Rect.fromLTWH(150 + 8, 100 - 8, 16, 16),
+      'dpadUp': const Rect.fromLTWH(150 - 8, 100 - 24, 16, 16),
+      'dpadDown': const Rect.fromLTWH(150 - 8, 100 + 8, 16, 16),
+      // Action buttons center at (350,100): Y(0,-25) A(0,25) X(-25,0) B(25,0) with r=16
+      'buttonY': const Rect.fromLTWH(350 - 16, 100 - 25 - 16, 32, 32),
+      'buttonA': const Rect.fromLTWH(350 - 16, 100 + 25 - 16, 32, 32),
+      'buttonX': const Rect.fromLTWH(350 - 25 - 16, 100 - 16, 32, 32),
+      'buttonB': const Rect.fromLTWH(350 + 25 - 16, 100 - 16, 32, 32),
+      // Center buttons (Select/Start) at translate(210,110)
+      'pauseButton': const Rect.fromLTWH(250, 110, 36, 14), // map pause to START
+      // Remote pseudo buttons at bottom
+      'previousTrack': const Rect.fromLTWH(120, 192, 80, 18),
+      'play': const Rect.fromLTWH(210, 192, 80, 18),
+      'nextTrack': const Rect.fromLTWH(300, 192, 80, 18),
     };
 
     final allMappings = InputMappingService.instance.mapping;
@@ -169,12 +171,12 @@ class _ControllerHotmap extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              for (final entry in normalized.entries)
+              for (final entry in rectsViewBox.entries)
                 _hotspotNorm(
-                  x: entry.value.left * width,
-                  y: entry.value.top * height,
-                  w: entry.value.width * width,
-                  h: entry.value.height * height,
+                  x: entry.value.left * (width / 500),
+                  y: entry.value.top * (height / 220),
+                  w: entry.value.width * (width / 500),
+                  h: entry.value.height * (height / 220),
                   id: entry.key,
                   selected: selected.contains(entry.key),
                   alsoUsedElsewhere: allMappings.entries.any((e) => e.key != currentAction && (e.value.contains(entry.key))),
