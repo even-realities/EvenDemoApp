@@ -88,6 +88,7 @@ class _InputMappingPageState extends State<InputMappingPage> {
               }
               setState(() => service.setControls(_activeAction, current));
             },
+            currentAction: _activeAction,
           ),
           const SizedBox(height: 16),
           const Text('次ページ'),
@@ -115,77 +116,100 @@ class _ControllerHotmap extends StatelessWidget {
   final double height;
   final Set<String> Function() selectedProvider;
   final void Function(String controlId) toggleCallback;
+  final ReaderAction currentAction;
 
   const _ControllerHotmap({
     required this.height,
     required this.selectedProvider,
     required this.toggleCallback,
+    required this.currentAction,
   });
 
   @override
   Widget build(BuildContext context) {
     final selected = selectedProvider();
-    return SizedBox(
-      height: height,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(
-            child: SvgPicture.asset(
-              'assets/additional_images/game_controller_svg.svg',
-              fit: BoxFit.contain,
-            ),
+    // 正規化座標（0..1）で定義し、実表示サイズにスケール
+    final normalized = <String, Rect>{
+      // 左右ショルダー/トリガー（上部）
+      'leftShoulder': const Rect.fromLTWH(0.08, 0.06, 0.22, 0.10),
+      'rightShoulder': const Rect.fromLTWH(0.70, 0.06, 0.22, 0.10),
+      'leftTrigger': const Rect.fromLTWH(0.08, 0.16, 0.22, 0.09),
+      'rightTrigger': const Rect.fromLTWH(0.70, 0.16, 0.22, 0.09),
+      // D-Pad（左）
+      'dpadLeft': const Rect.fromLTWH(0.15, 0.52, 0.10, 0.15),
+      'dpadRight': const Rect.fromLTWH(0.27, 0.52, 0.10, 0.15),
+      'dpadUp': const Rect.fromLTWH(0.21, 0.44, 0.10, 0.15),
+      'dpadDown': const Rect.fromLTWH(0.21, 0.60, 0.10, 0.15),
+      // ABXY（右）
+      'buttonB': const Rect.fromLTWH(0.62, 0.52, 0.10, 0.15),
+      'buttonA': const Rect.fromLTWH(0.74, 0.52, 0.10, 0.15),
+      'buttonY': const Rect.fromLTWH(0.68, 0.44, 0.10, 0.15),
+      'buttonX': const Rect.fromLTWH(0.68, 0.60, 0.10, 0.15),
+      // メニュー
+      'pauseButton': const Rect.fromLTWH(0.45, 0.50, 0.10, 0.08),
+      // リモート（下部）
+      'previousTrack': const Rect.fromLTWH(0.20, 0.88, 0.16, 0.08),
+      'play': const Rect.fromLTWH(0.42, 0.88, 0.16, 0.08),
+      'nextTrack': const Rect.fromLTWH(0.64, 0.88, 0.16, 0.08),
+    };
+
+    final allMappings = InputMappingService.instance.mapping;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return SizedBox(
+          height: height,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: SvgPicture.asset(
+                  'assets/additional_images/game_controller_svg.svg',
+                  fit: BoxFit.contain,
+                ),
+              ),
+              for (final entry in normalized.entries)
+                _hotspotNorm(
+                  x: entry.value.left * width,
+                  y: entry.value.top * height,
+                  w: entry.value.width * width,
+                  h: entry.value.height * height,
+                  id: entry.key,
+                  selected: selected.contains(entry.key),
+                  alsoUsedElsewhere: allMappings.entries.any((e) => e.key != currentAction && (e.value.contains(entry.key))),
+                ),
+            ],
           ),
-          // 左右ショルダー
-          _hotspot(left: 24, top: 16, w: 80, h: 30, id: 'leftShoulder', selected: selected.contains('leftShoulder')),
-          _hotspot(right: 24, top: 16, w: 80, h: 30, id: 'rightShoulder', selected: selected.contains('rightShoulder')),
-          // トリガー
-          _hotspot(left: 24, top: 52, w: 80, h: 24, id: 'leftTrigger', selected: selected.contains('leftTrigger')),
-          _hotspot(right: 24, top: 52, w: 80, h: 24, id: 'rightTrigger', selected: selected.contains('rightTrigger')),
-          // ABXY（右側）
-          _hotspot(right: 64, bottom: 48, w: 36, h: 36, id: 'buttonA', selected: selected.contains('buttonA')),
-          _hotspot(right: 100, bottom: 84, w: 36, h: 36, id: 'buttonY', selected: selected.contains('buttonY')),
-          _hotspot(right: 100, bottom: 12, w: 36, h: 36, id: 'buttonX', selected: selected.contains('buttonX')),
-          _hotspot(right: 136, bottom: 48, w: 36, h: 36, id: 'buttonB', selected: selected.contains('buttonB')),
-          // D-Pad（左側）
-          _hotspot(left: 64, bottom: 48, w: 36, h: 36, id: 'dpadRight', selected: selected.contains('dpadRight')),
-          _hotspot(left: 28, bottom: 48, w: 36, h: 36, id: 'dpadLeft', selected: selected.contains('dpadLeft')),
-          _hotspot(left: 46, bottom: 84, w: 36, h: 36, id: 'dpadUp', selected: selected.contains('dpadUp')),
-          _hotspot(left: 46, bottom: 12, w: 36, h: 36, id: 'dpadDown', selected: selected.contains('dpadDown')),
-          // メニューボタン
-          _hotspot(w: 36, h: 24, id: 'pauseButton', selected: selected.contains('pauseButton')),
-          // リモート（下部に擬似配置）
-          _hotspot(bottom: 4, w: 54, h: 24, id: 'play', selected: selected.contains('play')),
-          _hotspot(bottom: 4, left: 24, w: 54, h: 24, id: 'previousTrack', selected: selected.contains('previousTrack')),
-          _hotspot(bottom: 4, right: 24, w: 54, h: 24, id: 'nextTrack', selected: selected.contains('nextTrack')),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _hotspot({
-    double? left,
-    double? top,
-    double? right,
-    double? bottom,
+  Widget _hotspotNorm({
+    required double x,
+    required double y,
     required double w,
     required double h,
     required String id,
     required bool selected,
+    required bool alsoUsedElsewhere,
   }) {
     return Positioned(
-      left: left,
-      top: top,
-      right: right,
-      bottom: bottom,
+      left: x,
+      top: y,
       child: GestureDetector(
         onTap: () => toggleCallback(id),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
           width: w,
           height: h,
           decoration: BoxDecoration(
             color: selected ? Colors.amber.withOpacity(0.35) : Colors.transparent,
-            border: Border.all(color: selected ? Colors.amber : Colors.transparent, width: 2),
+            border: Border.all(
+              color: selected ? Colors.amber : (alsoUsedElsewhere ? Colors.blueAccent : Colors.transparent),
+              width: selected ? 2 : (alsoUsedElsewhere ? 1.5 : 0),
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
