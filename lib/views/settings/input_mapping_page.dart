@@ -159,7 +159,17 @@ class _ControllerHotmap extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        final boxW = constraints.maxWidth;
+        final boxH = height;
+        // Maintain SVG aspect ratio (500x220) with BoxFit.contain equivalent math
+        const svgW = 500.0;
+        const svgH = 220.0;
+        final scale = (boxW / svgW < boxH / svgH) ? (boxW / svgW) : (boxH / svgH);
+        final imgW = svgW * scale;
+        final imgH = svgH * scale;
+        final offX = (boxW - imgW) / 2.0;
+        final offY = (boxH - imgH) / 2.0;
+
         return SizedBox(
           height: height,
           child: Stack(
@@ -173,10 +183,10 @@ class _ControllerHotmap extends StatelessWidget {
               ),
               for (final entry in rectsViewBox.entries)
                 _hotspotNorm(
-                  x: entry.value.left * (width / 500),
-                  y: entry.value.top * (height / 220),
-                  w: entry.value.width * (width / 500),
-                  h: entry.value.height * (height / 220),
+                  x: offX + entry.value.left * scale,
+                  y: offY + entry.value.top * scale,
+                  w: entry.value.width * scale,
+                  h: entry.value.height * scale,
                   id: entry.key,
                   selected: selected.contains(entry.key),
                   alsoUsedElsewhere: allMappings.entries.any((e) => e.key != currentAction && (e.value.contains(entry.key))),

@@ -19,10 +19,10 @@ class InputMappingService {
 
   static Map<ReaderAction, Set<String>> _defaultMapping() => {
         ReaderAction.nextPage: {
-          'dpadRight', 'buttonA', 'rightShoulder', 'rightTrigger', 'nextTrack'
+          'dpadRight', 'buttonA', 'rightShoulder', 'nextTrack'
         },
         ReaderAction.previousPage: {
-          'dpadLeft', 'buttonB', 'leftShoulder', 'leftTrigger', 'previousTrack'
+          'dpadLeft', 'buttonB', 'leftShoulder', 'previousTrack'
         },
         ReaderAction.autoScrollStart: {
           'buttonX', 'dpadUp', 'play', 'togglePlayPause'
@@ -75,7 +75,7 @@ class InputMappingService {
     // Gamepad
     'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight',
     'buttonA', 'buttonB', 'buttonX', 'buttonY',
-    'leftShoulder', 'rightShoulder', 'leftTrigger', 'rightTrigger',
+    'leftShoulder', 'rightShoulder',
     'pauseButton',
     // Remote (audio)
     'play', 'pause', 'togglePlayPause', 'nextTrack', 'previousTrack',
