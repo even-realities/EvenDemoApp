@@ -6,6 +6,7 @@ import 'package:demo_ai_even/services/elevenlabs_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 
 class VoiceAsrPage extends StatefulWidget {
   const VoiceAsrPage({super.key});
@@ -21,6 +22,7 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final AudioPlayer _player = AudioPlayer();
   bool _available = false;
   bool _listening = false;
+  bool _useVAD = false;
   String _localeId = 'ja_JP';
   String _partialText = '';
   final StringBuffer _finalBuffer = StringBuffer();
@@ -71,6 +73,11 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
       _listening = true;
       _partialText = '';
     });
+    // ネイティブの VAD 有効/無効を切替
+    const method = MethodChannel('method.bluetooth');
+    try {
+      await method.invokeMethod('setVADEnabled', {'enabled': _useVAD});
+    } catch (_) {}
     await _speech.listen(
       localeId: _localeId,
       listenMode: stt.ListenMode.dictation,
@@ -186,6 +193,19 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('VAD'),
+                    Switch(
+                      value: _useVAD,
+                      onChanged: (v) {
+                        setState(() => _useVAD = v);
+                        // TODO: MethodChannelでネイティブに反映する
+                      },
+                    ),
+                  ],
+                ),
                 ElevatedButton(
                   onPressed: _listening ? null : _start,
                   child: const Text('開始'),

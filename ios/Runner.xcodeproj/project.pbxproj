@@ -26,6 +26,8 @@
 		04D9653C2CCFB80800F794C2 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D9653A2CCFB80800F794C2 /* BluetoothManager.swift */; };
 		04D9653E2CCFB81400F794C2 /* SpeechStreamRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D9653D2CCFB81400F794C2 /* SpeechStreamRecognizer.swift */; };
 		04D965622CCFB8A600F794C2 /* ServiceIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D965612CCFB8A600F794C2 /* ServiceIdentifiers.swift */; };
+		08ACF1742E59A5D600C82B70 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 08ACF1732E59A5D600C82B70 /* FluidAudio */; };
+		08ACF1762E59A87D00C82B70 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 08ACF1752E59A87D00C82B70 /* FluidAudio */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -141,6 +143,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08ACF1742E59A5D600C82B70 /* FluidAudio in Frameworks */,
+				08ACF1762E59A87D00C82B70 /* FluidAudio in Frameworks */,
 				491B4DAC0E40045CBF616E0B /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -348,6 +352,9 @@
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
+			packageReferences = (
+				08ACF1722E59A5D600C82B70 /* XCRemoteSwiftPackageReference "FluidAudio" */,
+			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -611,7 +618,7 @@
 				DEVELOPMENT_TEAM = TU5NR9XD4U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -709,7 +716,7 @@
 				DEVELOPMENT_TEAM = 6GUV89HX33;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -898,7 +905,7 @@
 				DEVELOPMENT_TEAM = TU5NR9XD4U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -925,7 +932,7 @@
 				DEVELOPMENT_TEAM = TU5NR9XD4U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -976,6 +983,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		08ACF1722E59A5D600C82B70 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		08ACF1732E59A5D600C82B70 /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 08ACF1722E59A5D600C82B70 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+		08ACF1752E59A87D00C82B70 /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 08ACF1722E59A5D600C82B70 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 97C146E61CF9000F007C117D /* Project object */;
 }

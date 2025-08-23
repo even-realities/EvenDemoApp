@@ -41,8 +41,8 @@ final class FluidVADManagerWrapper {
                                     chunkSize: 512,
                                     sampleRate: 16000,
                                     adaptiveThreshold: true,
-                                    enableSNRFiltering: true,
-                                    computeUnits: .cpuAndNeuralEngine)
+                                    computeUnits: .cpuAndNeuralEngine,
+                                    enableSNRFiltering: true)
                 let m = VadManager(config: cfg)
                 do { try await m.initialize(); vad = m } catch {
                     print("FluidVAD initialize error: \(error)"); return false
@@ -85,6 +85,7 @@ final class FluidVADManagerWrapper {
 
 class SpeechStreamRecognizer {
     static let shared = SpeechStreamRecognizer()
+    static var isVADEnabled: Bool = false
     
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -234,7 +235,7 @@ class SpeechStreamRecognizer {
     func appendPCMData(_ pcmData: Data) {
         print("appendPCMData-------pcmData------\(pcmData.count)--")
         // 1) まずVADへ（iOS17+が前提。使えない環境では従来処理へフォールバック）
-        if #available(iOS 17.0, *) {
+        if Self.isVADEnabled, #available(iOS 17.0, *) {
             Task { @MainActor in
                 await FluidVADManagerWrapper.shared.initializeIfNeeded()
             }
