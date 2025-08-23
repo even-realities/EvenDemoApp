@@ -7,6 +7,82 @@
 import AVFoundation
 import Speech
 
+#if canImport(FluidAudio)
+import FluidAudio
+#endif
+
+// Inline wrapper so it is always compiled as part of Runner target
+@available(iOS 13.0, *)
+final class FluidVADManagerWrapper {
+    static let shared = FluidVADManagerWrapper()
+    private init() {}
+
+    private var int16Buffer: [Int16] = []
+
+    #if canImport(FluidAudio)
+    @available(iOS 17.0, *)
+    private var vad: VadManager?
+    #endif
+
+    private var isAvailable: Bool {
+        #if canImport(FluidAudio)
+        if #available(iOS 17.0, *) { return true }
+        #endif
+        return false
+    }
+
+    @discardableResult
+    func initializeIfNeeded() async -> Bool {
+        guard isAvailable else { return false }
+        #if canImport(FluidAudio)
+        if #available(iOS 17.0, *) {
+            if vad == nil {
+                let cfg = VadConfig(threshold: 0.445,
+                                    chunkSize: 512,
+                                    sampleRate: 16000,
+                                    adaptiveThreshold: true,
+                                    enableSNRFiltering: true,
+                                    computeUnits: .cpuAndNeuralEngine)
+                let m = VadManager(config: cfg)
+                do { try await m.initialize(); vad = m } catch {
+                    print("FluidVAD initialize error: \(error)"); return false
+                }
+            }
+            return vad != nil
+        }
+        #endif
+        return false
+    }
+
+    func appendPCM(_ data: Data, onResult: @escaping (_ probability: Float, _ active: Bool) -> Void) {
+        guard isAvailable else { return }
+        let count = data.count / MemoryLayout<Int16>.size
+        data.withUnsafeBytes { raw in
+            if let base = raw.bindMemory(to: Int16.self).baseAddress {
+                int16Buffer.append(contentsOf: UnsafeBufferPointer(start: base, count: count))
+            }
+        }
+        while int16Buffer.count >= 512 {
+            let frame = Array(int16Buffer.prefix(512))
+            int16Buffer.removeFirst(512)
+            var floats = [Float](repeating: 0, count: 512)
+            for i in 0..<512 { floats[i] = Float(frame[i]) / 32768.0 }
+            #if canImport(FluidAudio)
+            if #available(iOS 17.0, *), let vad {
+                Task.detached { [floats] in
+                    do {
+                        let res = try await vad.processChunk(floats)
+                        onResult(res.probability, res.isVoiceActive)
+                    } catch {
+                        onResult(0.0, false)
+                    }
+                }
+            }
+            #endif
+        }
+    }
+}
+
 class SpeechStreamRecognizer {
     static let shared = SpeechStreamRecognizer()
     
