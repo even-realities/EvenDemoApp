@@ -175,22 +175,33 @@ class _ControllerHotmap extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // SVG本体
               Positioned.fill(
                 child: SvgPicture.asset(
                   'assets/additional_images/game_controller_svg.svg',
                   fit: BoxFit.contain,
                 ),
               ),
-              for (final entry in rectsViewBox.entries)
-                _hotspotNorm(
-                  x: offX + entry.value.left * scale,
-                  y: offY + entry.value.top * scale,
-                  w: entry.value.width * scale,
-                  h: entry.value.height * scale,
-                  id: entry.key,
-                  selected: selected.contains(entry.key),
-                  alsoUsedElsewhere: allMappings.entries.any((e) => e.key != currentAction && (e.value.contains(entry.key))),
-                ),
+              // SVG内の <g id="hotspots"> の rect をパースしてホットスポット化
+              FutureBuilder<String>(
+                future: DefaultAssetBundle.of(context).loadString('assets/additional_images/game_controller_svg.svg'),
+                builder: (context, snap) {
+                  if (!snap.hasData) return const SizedBox.shrink();
+                  final rects = _parseHotspotsFromSvg(snap.data!);
+                  return Stack(children: [
+                    for (final e in rects.entries)
+                      _hotspotNorm(
+                        x: offX + e.value.left * scale,
+                        y: offY + e.value.top * scale,
+                        w: e.value.width * scale,
+                        h: e.value.height * scale,
+                        id: e.key,
+                        selected: selected.contains(e.key),
+                        alsoUsedElsewhere: allMappings.entries.any((m) => m.key != currentAction && (m.value.contains(e.key))),
+                      ),
+                  ]);
+                },
+              ),
             ],
           ),
         );
@@ -228,4 +239,24 @@ class _ControllerHotmap extends StatelessWidget {
       ),
     );
   }
+}
+
+// 簡易SVGパーサ: <g id="hotspots"> の直下にある <rect id=.. x=.. y=.. width=.. height=.. /> を抽出
+Map<String, Rect> _parseHotspotsFromSvg(String svg) {
+  final Map<String, Rect> rects = {};
+  final gStart = svg.indexOf('<g id="hotspots"');
+  if (gStart < 0) return rects;
+  final gEnd = svg.indexOf('</g>', gStart);
+  if (gEnd < 0) return rects;
+  final hot = svg.substring(gStart, gEnd);
+  final reg = RegExp(r'<rect[^>]*id\s*=\s*"([^"]+)"[^>]*x\s*=\s*"([0-9.]+)"[^>]*y\s*=\s*"([0-9.]+)"[^>]*width\s*=\s*"([0-9.]+)"[^>]*height\s*=\s*"([0-9.]+)"[^>]*/?>');
+  for (final m in reg.allMatches(hot)) {
+    final id = m.group(1)!;
+    final x = double.parse(m.group(2)!);
+    final y = double.parse(m.group(3)!);
+    final w = double.parse(m.group(4)!);
+    final h = double.parse(m.group(5)!);
+    rects[id] = Rect.fromLTWH(x, y, w, h);
+  }
+  return rects;
 }
