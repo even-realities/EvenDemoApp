@@ -4,18 +4,26 @@ import 'package:dio/dio.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
 
+class WebLink {
+  final String text;
+  final String url;
+  WebLink({required this.text, required this.url});
+}
+
 class WebTextExtractorResult {
   final String url;
   final String? title;
   final List<String> textBlocks; // paragraphs, list items
   final List<String> codeBlocks; // code/pre blocks
   final String? rawTextFallback;
+  final List<WebLink> links; // discovered anchors
   WebTextExtractorResult({
     required this.url,
     this.title,
     required this.textBlocks,
     required this.codeBlocks,
     this.rawTextFallback,
+    this.links = const [],
   });
 }
 
@@ -37,6 +45,7 @@ class WebTextExtractor {
 
     final textBlocks = <String>[];
     final codeBlocks = <String>[];
+    final links = <WebLink>[];
 
     if (root != null) {
       // Extract code first to keep separated
@@ -53,6 +62,27 @@ class WebTextExtractor {
       }
     }
 
+    // Discover links (same-origin preferred)
+    try {
+      final base = Uri.parse(url);
+      final seen = <String>{};
+      for (final a in doc.querySelectorAll('a[href]')) {
+        final href = a.attributes['href']?.trim();
+        if (href == null || href.isEmpty) continue;
+        Uri resolved;
+        try {
+          resolved = base.resolve(href);
+        } catch (_) { continue; }
+        if (!(resolved.scheme == 'http' || resolved.scheme == 'https')) continue;
+        if (resolved.host != base.host) continue; // same-origin only
+        final abs = resolved.toString();
+        if (seen.add(abs)) {
+          final text = (a.text.trim().isNotEmpty ? a.text.trim() : abs);
+          links.add(WebLink(text: text, url: abs));
+        }
+      }
+    } catch (_) {}
+
     // Fallback if empty
     String? fallback;
     if (textBlocks.isEmpty && codeBlocks.isEmpty) {
@@ -65,6 +95,7 @@ class WebTextExtractor {
       textBlocks: textBlocks,
       codeBlocks: codeBlocks,
       rawTextFallback: fallback,
+      links: links,
     );
   }
 

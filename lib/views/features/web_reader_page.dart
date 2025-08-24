@@ -115,6 +115,25 @@ class _WebReaderPageState extends State<WebReaderPage> {
                           ],
                         ),
                         const SizedBox(height: 8),
+                        if (_result!.links.isNotEmpty) ...[
+                          const Text('リンク', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final l in _result!.links)
+                                OutlinedButton(
+                                  onPressed: () async {
+                                    setState(() { _url.text = l.url; });
+                                    await _load();
+                                  },
+                                  child: Text(l.text, overflow: TextOverflow.ellipsis),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         if (_result!.textBlocks.isNotEmpty) ...[
                           const Text('本文', style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
