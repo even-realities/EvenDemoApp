@@ -56,6 +56,13 @@ import MediaPlayer
             case "stopEvenAI":
                 SpeechStreamRecognizer.shared.stopRecognition()
                 result(nil)
+            case "setVADEnabled":
+                if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
+                    if #available(iOS 13.0, *) {
+                        SpeechStreamRecognizer.isVADEnabled = enabled
+                    }
+                }
+                result(nil)
             default:
                 result(FlutterMethodNotImplemented)
             }

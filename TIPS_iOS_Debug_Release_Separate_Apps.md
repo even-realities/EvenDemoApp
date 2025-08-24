@@ -6,12 +6,7 @@
 
 ## 最短サマリ（結論）
 
-- Debug 構成と Release 構成で **Bundle ID** を分ける
-  - Debug: `com.example.demoAiEven.dev`
-  - Release: `com.example.demoAiEven`
-- 表示名は Info.plist を `$(APP_DISPLAY_NAME)` にし、構成別に値を持たせる
-  - Debug: `Even AI (Dev)` / Release: `Even AI`
-- アイコンは AppIcon セットを二つ用意し、構成別に切替
+- Debug 構成と Release 構成で **Bundle ID** を分ける - Debug: `com.example.demoAiEven.dev` - Release: `com.example.demoAiEven` - 表示名は Info.plist を `$(APP_DISPLAY_NAME)` にし、構成別に値を持たせる - Debug: `Even AI (Dev)` / Release: `Even AI` - アイコンは AppIcon セットを二つ用意し、構成別に切替
   - Debug: `AppIcon-dev` / Release: `AppIcon-prod`
   - `ios/Flutter/Debug.xcconfig` と `Release.xcconfig` で切替できるようにする
 - 実行（flavor 不使用）

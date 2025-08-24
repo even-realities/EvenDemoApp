@@ -6,6 +6,9 @@ import 'package:demo_ai_even/services/elevenlabs_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
+import 'package:demo_ai_even/services/proto.dart';
+import 'package:demo_ai_even/services/evenai.dart';
 
 class VoiceAsrPage extends StatefulWidget {
   const VoiceAsrPage({super.key});
@@ -21,10 +24,15 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final AudioPlayer _player = AudioPlayer();
   bool _available = false;
   bool _listening = false;
+  bool _useVAD = false;
+  bool _outputToGlasses = false;
   String _localeId = 'ja_JP';
   String _partialText = '';
   final StringBuffer _finalBuffer = StringBuffer();
   ApiConfig? _config;
+  final List<String> _glassLines = [];
+  String _glassesBuffer = '';
+  bool _primed = false;
 
   @override
   void initState() {
@@ -71,6 +79,11 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
       _listening = true;
       _partialText = '';
     });
+    // ネイティブの VAD 有効/無効を切替
+    const method = MethodChannel('method.bluetooth');
+    try {
+      await method.invokeMethod('setVADEnabled', {'enabled': _useVAD});
+    } catch (_) {}
     await _speech.listen(
       localeId: _localeId,
       listenMode: stt.ListenMode.dictation,
@@ -79,7 +92,13 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
         setState(() {
           _partialText = result.recognizedWords;
           if (result.finalResult) {
-            _finalBuffer.writeln(_partialText);
+            final finalized = _partialText.trim();
+            if (finalized.isNotEmpty) {
+              _finalBuffer.writeln(finalized);
+              if (_outputToGlasses) {
+                _appendAndRenderToGlasses(finalized);
+              }
+            }
             _partialText = '';
           }
         });
@@ -92,6 +111,50 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     setState(() {
       _listening = false;
     });
+  }
+
+  void _appendAndRenderToGlasses(String line) {
+    if (line.isEmpty) return;
+    // バッファに追記し、幅に合わせて行分割
+    if (_glassesBuffer.isNotEmpty) {
+      _glassesBuffer += '\n';
+    }
+    _glassesBuffer += line;
+    final lines = EvenAIDataMethod.measureStringList(_glassesBuffer);
+    _glassLines
+      ..clear()
+      ..addAll(lines.length <= 5 ? lines : lines.sublist(lines.length - 5));
+    _renderGlassesLines();
+  }
+
+  Future<void> _renderGlassesLines() async {
+    final text = _glassLines.map((e) => '$e\n').join();
+    if (text.trim().isEmpty) return;
+    try {
+      // 公式挙動に合わせて: 初回0x30 -> 以後0x50 で更新
+      final status = _primed ? 0x50 : 0x30;
+      final ok = await Proto.sendEvenAIData(
+        text,
+        newScreen: EvenAIDataMethod.transferToNewScreen(0x01, status),
+        pos: 0,
+        current_page_num: 1,
+        max_page_num: 1,
+      );
+      if (!ok && mounted) {
+        Fluttertoast.showToast(msg: 'グラス送信失敗（未接続/タイムアウト）');
+      } else if (ok) {
+        _primed = true;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _primeGlassesDisplay() async {
+    // 先頭に少しマージンを入れたい場合は空行を追加
+    if (_glassesBuffer.isEmpty) {
+      _glassesBuffer = '\n';
+    }
+    _primed = false;
+    await _renderGlassesLines();
   }
 
   Future<void> _sendAllText() async {
@@ -186,6 +249,34 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('VAD'),
+                    Switch(
+                      value: _useVAD,
+                      onChanged: (v) {
+                        setState(() => _useVAD = v);
+                        // TODO: MethodChannelでネイティブに反映する
+                      },
+                    ),
+                  ],
+                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('グラスへ出力'),
+                  Switch(
+                    value: _outputToGlasses,
+                    onChanged: (v) {
+                      setState(() => _outputToGlasses = v);
+                      if (v) {
+                        _primeGlassesDisplay();
+                      }
+                    },
+                  ),
+                ],
+              ),
                 ElevatedButton(
                   onPressed: _listening ? null : _start,
                   child: const Text('開始'),

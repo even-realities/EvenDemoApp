@@ -103,4 +103,24 @@
   <text x="250" y="85" text-anchor="middle" fill="#fff" font-family="Arial" font-size="12" font-weight="bold" opacity="0.8">8BitDo</text>
   <line x1="220" y1="90" x2="280" y2="90" stroke="#fff" stroke-width="1" opacity="0.6"/>
   <text x="250" y="105" text-anchor="middle" fill="#fff" font-family="Arial" font-size="10" opacity="0.7">Zero 2</text>
+ 
+  <!-- Hotspot rects (for app to parse). Invisible; used for hit testing. -->
+  <g id="hotspots" opacity="0.001">
+    <!-- shoulders -->
+    <rect id="leftShoulder"  x="120" y="30"  width="40" height="18" />
+    <rect id="rightShoulder" x="340" y="30"  width="40" height="18" />
+    <!-- dpad quadrants around (150,100) -->
+    <rect id="dpadLeft"  x="126" y="92"  width="16" height="16" />
+    <rect id="dpadRight" x="158" y="92"  width="16" height="16" />
+    <rect id="dpadUp"    x="142" y="76"  width="16" height="16" />
+    <rect id="dpadDown"  x="142" y="108" width="16" height="16" />
+    <!-- ABXY around (350,100), r=16 -->
+    <rect id="buttonY" x="334" y="59"  width="32" height="32" />
+    <rect id="buttonA" x="334" y="109" width="32" height="32" />
+    <rect id="buttonX" x="309" y="84"  width="32" height="32" />
+    <rect id="buttonB" x="359" y="84"  width="32" height="32" />
+    <!-- center (STARTをpauseButtonに対応) -->
+    <rect id="pauseButton" x="250" y="110" width="36" height="14" />
+    <rect id="selectButton" x="210" y="110" width="36" height="14" />
+  </g>
 </svg>

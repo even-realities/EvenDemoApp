@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="320" viewBox="0 0 260 320">
+  <!-- Simplified for flutter_svg compatibility: no CSS variables, no filters -->
+  <!-- body -->
+  <rect x="12" y="10" rx="28" ry="28" width="236" height="300" fill="#f5f7fb" stroke="#e3e7ef" stroke-width="2"/>
+
+  <!-- top D-pad area -->
+  <g transform="translate(130,100)">
+    <!-- center circle -->
+    <circle r="28" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <!-- pause bars -->
+    <rect x="-10" y="-12" width="6" height="24" rx="2" fill="#8a94a6"/>
+    <rect x="4" y="-12" width="6" height="24" rx="2" fill="#8a94a6"/>
+
+    <!-- up triangle -->
+    <path d="M 0 -64 L 18 -40 L -18 -40 Z" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <path d="M 0 -52 L 8 -42 L -8 -42 Z" fill="#8a94a6"/>
+
+    <!-- right triangle -->
+    <path d="M 64 0 L 40 18 L 40 -18 Z" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <path d="M 52 0 L 42 8 L 42 -8 Z" fill="#8a94a6"/>
+
+    <!-- down triangle -->
+    <path d="M 0 64 L -18 40 L 18 40 Z" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <path d="M 0 52 L -8 42 L 8 42 Z" fill="#8a94a6"/>
+
+    <!-- left triangle -->
+    <path d="M -64 0 L -40 -18 L -40 18 Z" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <path d="M -52 0 L -42 -8 L -42 8 Z" fill="#8a94a6"/>
+  </g>
+
+  <!-- middle left/right small skip buttons (optional) -->
+  <g transform="translate(130,100)">
+    <!-- left 'back' icon triangle -->
+    <polygon points="-34,-8 -50,0 -34,8" fill="#8a94a6" opacity="0.85"/>
+    <!-- right 'next' icon triangle -->
+    <polygon points="34,-8 50,0 34,8" fill="#8a94a6" opacity="0.85"/>
+  </g>
+
+  <!-- bottom buttons row -->
+  <!-- power -->
+  <g transform="translate(70,240)">
+    <circle r="32" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <!-- power glyph -->
+    <path d="M0 -16 V -34" stroke="#8a94a6" stroke-width="5" stroke-linecap="round"/>
+    <path d="M-16 -6 A18 18 0 1 0 16 -6" fill="none" stroke="#8a94a6" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- 1 -->
+  <g transform="translate(130,240)">
+    <circle r="32" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <text x="0" y="10" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600" fill="#8a94a6">1</text>
+  </g>
+
+  <!-- 2 -->
+  <g transform="translate(190,240)">
+    <circle r="32" fill="#ffffff" stroke="#e3e7ef" stroke-width="2"/>
+    <text x="0" y="10" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600" fill="#8a94a6">2</text>
+  </g>
+
+  <!-- Hotspots for mapping -->
+  <g id="hotspots" opacity="0.001">
+    <!-- D-pad directions (approximate global coords for viewBox 260x320) -->
+    <rect id="dpadUp" x="110" y="36" width="40" height="24" />
+    <rect id="dpadDown" x="110" y="140" width="40" height="24" />
+    <rect id="dpadLeft" x="66" y="80" width="24" height="40" />
+    <rect id="dpadRight" x="170" y="80" width="24" height="40" />
+    <!-- Center (togglePlayPause) -->
+    <rect id="togglePlayPause" x="102" y="72" width="56" height="56" />
+    <!-- Skip icons -->
+    <rect id="previousTrack" x="80" y="92" width="16" height="16" />
+    <rect id="nextTrack" x="164" y="92" width="16" height="16" />
+    <!-- Bottom row -->
+    <rect id="power" x="38" y="208" width="64" height="64" />
+    <rect id="remote1" x="98" y="208" width="64" height="64" />
+    <rect id="remote2" x="158" y="208" width="64" height="64" />
+  </g>
+</svg>

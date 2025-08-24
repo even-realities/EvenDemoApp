@@ -12,6 +12,7 @@ class InputMappingPage extends StatefulWidget {
 class _InputMappingPageState extends State<InputMappingPage> {
   final service = InputMappingService.instance;
   ReaderAction _activeAction = ReaderAction.nextPage;
+  bool _showRemote = false;
 
   @override
   void initState() {
@@ -63,6 +64,25 @@ class _InputMappingPageState extends State<InputMappingPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('表示: '),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('ゲームパッド')),
+                  ButtonSegment(value: true, label: Text('リモコン')),
+                ],
+                selected: {_showRemote},
+                onSelectionChanged: (s) {
+                  setState(() {
+                    _showRemote = s.first;
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           // 編集対象アクションの選択（SVGホットマップはこのアクションに対してトグル）
           SegmentedButton<ReaderAction>(
             segments: const [
@@ -89,6 +109,7 @@ class _InputMappingPageState extends State<InputMappingPage> {
               setState(() => service.setControls(_activeAction, current));
             },
             currentAction: _activeAction,
+            showRemote: _showRemote,
           ),
           const SizedBox(height: 16),
           const Text('次ページ'),
@@ -117,12 +138,14 @@ class _ControllerHotmap extends StatelessWidget {
   final Set<String> Function() selectedProvider;
   final void Function(String controlId) toggleCallback;
   final ReaderAction currentAction;
+  final bool showRemote;
 
   const _ControllerHotmap({
     required this.height,
     required this.selectedProvider,
     required this.toggleCallback,
     required this.currentAction,
+    this.showRemote = false,
   });
 
   @override
@@ -161,36 +184,53 @@ class _ControllerHotmap extends StatelessWidget {
       builder: (context, constraints) {
         final boxW = constraints.maxWidth;
         final boxH = height;
-        // Maintain SVG aspect ratio (500x220) with BoxFit.contain equivalent math
-        const svgW = 500.0;
-        const svgH = 220.0;
-        final scale = (boxW / svgW < boxH / svgH) ? (boxW / svgW) : (boxH / svgH);
-        final imgW = svgW * scale;
-        final imgH = svgH * scale;
-        final offX = (boxW - imgW) / 2.0;
-        final offY = (boxH - imgH) / 2.0;
 
         return SizedBox(
           height: height,
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // SVG本体
               Positioned.fill(
                 child: SvgPicture.asset(
-                  'assets/additional_images/game_controller_svg.svg',
+                  showRemote
+                      ? 'assets/additional_images/remote_controller_svg.svg'
+                      : 'assets/additional_images/game_controller_svg.svg',
                   fit: BoxFit.contain,
                 ),
               ),
-              for (final entry in rectsViewBox.entries)
-                _hotspotNorm(
-                  x: offX + entry.value.left * scale,
-                  y: offY + entry.value.top * scale,
-                  w: entry.value.width * scale,
-                  h: entry.value.height * scale,
-                  id: entry.key,
-                  selected: selected.contains(entry.key),
-                  alsoUsedElsewhere: allMappings.entries.any((e) => e.key != currentAction && (e.value.contains(entry.key))),
-                ),
+              // SVG内の <g id="hotspots"> の rect をパースしてホットスポット化
+              FutureBuilder<String>(
+                future: DefaultAssetBundle.of(context).loadString(
+                    showRemote
+                        ? 'assets/additional_images/remote_controller_svg.svg'
+                        : 'assets/additional_images/game_controller_svg.svg'),
+                builder: (context, snap) {
+                  if (!snap.hasData) return const SizedBox.shrink();
+                  final svgText = snap.data!;
+                  final rects = _parseHotspotsFromSvg(svgText);
+                  final vb = _parseViewBox(svgText);
+                  final svgW = vb.$1;
+                  final svgH = vb.$2;
+                  final scale = (boxW / svgW < boxH / svgH) ? (boxW / svgW) : (boxH / svgH);
+                  final imgW = svgW * scale;
+                  final imgH = svgH * scale;
+                  final offX = (boxW - imgW) / 2.0;
+                  final offY = (boxH - imgH) / 2.0;
+                  return Stack(children: [
+                    for (final e in rects.entries)
+                      _hotspotNorm(
+                        x: offX + e.value.left * scale,
+                        y: offY + e.value.top * scale,
+                        w: e.value.width * scale,
+                        h: e.value.height * scale,
+                        id: e.key,
+                        selected: selected.contains(e.key),
+                        alsoUsedElsewhere: allMappings.entries.any((m) => m.key != currentAction && (m.value.contains(e.key))),
+                      ),
+                  ]);
+                },
+              ),
             ],
           ),
         );
@@ -228,4 +268,36 @@ class _ControllerHotmap extends StatelessWidget {
       ),
     );
   }
+}
+
+// 簡易SVGパーサ: <g id="hotspots"> の直下にある <rect id=.. x=.. y=.. width=.. height=.. /> を抽出
+Map<String, Rect> _parseHotspotsFromSvg(String svg) {
+  final Map<String, Rect> rects = {};
+  final gStart = svg.indexOf('<g id="hotspots"');
+  if (gStart < 0) return rects;
+  final gEnd = svg.indexOf('</g>', gStart);
+  if (gEnd < 0) return rects;
+  final hot = svg.substring(gStart, gEnd);
+  final reg = RegExp(r'<rect[^>]*id\s*=\s*"([^"]+)"[^>]*x\s*=\s*"([0-9.]+)"[^>]*y\s*=\s*"([0-9.]+)"[^>]*width\s*=\s*"([0-9.]+)"[^>]*height\s*=\s*"([0-9.]+)"[^>]*/?>');
+  for (final m in reg.allMatches(hot)) {
+    final id = m.group(1)!;
+    final x = double.parse(m.group(2)!);
+    final y = double.parse(m.group(3)!);
+    final w = double.parse(m.group(4)!);
+    final h = double.parse(m.group(5)!);
+    rects[id] = Rect.fromLTWH(x, y, w, h);
+  }
+  return rects;
+}
+
+/// Extracts viewBox width/height from the <svg> tag. Falls back to 500x220.
+(double, double) _parseViewBox(String svg) {
+  final m = RegExp(r'<svg[^>]*viewBox\s*=\s*"([^"]+)"', caseSensitive: false)
+      .firstMatch(svg);
+  if (m == null) return (500, 220);
+  final parts = m.group(1)!.trim().split(RegExp(r"\s+"));
+  if (parts.length != 4) return (500, 220);
+  final w = double.tryParse(parts[2]) ?? 500;
+  final h = double.tryParse(parts[3]) ?? 220;
+  return (w, h);
 }
