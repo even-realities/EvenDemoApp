@@ -1,4 +1,6 @@
 import 'package:demo_ai_even/services/web_text_extractor.dart';
+import 'package:demo_ai_even/services/local_file_service.dart';
+import 'package:demo_ai_even/views/features/text_viewer_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -69,8 +71,49 @@ class _WebReaderPageState extends State<WebReaderPage> {
                   ? const Center(child: Text('URLを入力して「取得」を押してください'))
                   : ListView(
                       children: [
-                        if (_result!.title != null)
-                          Text(_result!.title!, style: Theme.of(context).textTheme.titleLarge),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _result!.title ?? _result!.url,
+                                style: Theme.of(context).textTheme.titleLarge,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () async {
+                                // Compose text-only content
+                                final buf = StringBuffer();
+                                if (_result!.title != null) {
+                                  buf.writeln(_result!.title);
+                                  buf.writeln('');
+                                }
+                                for (final t in _result!.textBlocks) {
+                                  buf.writeln(t);
+                                }
+                                if (_result!.textBlocks.isEmpty && _result!.rawTextFallback != null) {
+                                  buf.writeln(_result!.rawTextFallback);
+                                }
+                                final content = buf.toString().trim();
+                                if (content.isEmpty) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('送信できるテキストがありません')));
+                                  return;
+                                }
+                                // Save as temp file and open TextViewerPage to reuse sender pipeline
+                                final fileName = _safeFileName(_result!.title ?? 'web_text') + '.txt';
+                                await LocalFileService.instance.saveFile(fileName, content);
+                                if (!mounted) return;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => TextViewerPage(fileName: fileName)),
+                                );
+                              },
+                              child: const Text('テキストをデバイスへ送信'),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 8),
                         if (_result!.textBlocks.isNotEmpty) ...[
                           const Text('本文', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -113,4 +156,11 @@ class _WebReaderPageState extends State<WebReaderPage> {
       ),
     );
   }
+}
+
+String _safeFileName(String name) {
+  return name
+      .replaceAll(RegExp(r"[^A-Za-z0-9._-]+"), '_')
+      .replaceAll(RegExp(r"_+"), '_')
+      .replaceAll(RegExp(r"^_+|_+$"), '');
 }
