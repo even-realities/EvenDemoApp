@@ -76,8 +76,10 @@ class InputMappingService {
     'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight',
     'buttonA', 'buttonB', 'buttonX', 'buttonY',
     'leftShoulder', 'rightShoulder',
-    'pauseButton',
+    'pauseButton', 'selectButton',
     // Remote (audio)
     'play', 'pause', 'togglePlayPause', 'nextTrack', 'previousTrack',
+    // Remote controller (new)
+    'power', 'remote1', 'remote2',
   ];
 }
