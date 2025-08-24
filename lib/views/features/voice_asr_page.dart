@@ -33,6 +33,8 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
   final List<String> _glassLines = [];
   String _glassesBuffer = '';
   bool _primed = false;
+  bool _hasTrailingPartial = false;
+  Timer? _partialDebounce;
 
   @override
   void initState() {
@@ -96,10 +98,15 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
             if (finalized.isNotEmpty) {
               _finalBuffer.writeln(finalized);
               if (_outputToGlasses) {
-                _appendAndRenderToGlasses(finalized);
+                _commitFinalToGlasses(finalized);
               }
             }
             _partialText = '';
+            _hasTrailingPartial = false;
+          } else {
+            if (_outputToGlasses) {
+              _debouncedUpdatePartialOnGlasses(_partialText.trim());
+            }
           }
         });
       },
@@ -124,6 +131,49 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     _glassLines
       ..clear()
       ..addAll(lines.length <= 5 ? lines : lines.sublist(lines.length - 5));
+    _renderGlassesLines();
+  }
+
+  void _commitFinalToGlasses(String finalLine) {
+    if (finalLine.isEmpty) return;
+    if (_hasTrailingPartial && _glassLines.isNotEmpty) {
+      // 直近の部分結果を最終結果で置換
+      _glassLines[_glassLines.length - 1] = finalLine;
+      _hasTrailingPartial = false;
+      // finalizedはバッファにも取り込む
+      if (_glassesBuffer.isNotEmpty) _glassesBuffer += '\n';
+      _glassesBuffer += finalLine;
+      _renderGlassesLines();
+    } else {
+      _appendAndRenderToGlasses(finalLine);
+    }
+  }
+
+  void _debouncedUpdatePartialOnGlasses(String partial) {
+    _partialDebounce?.cancel();
+    if (partial.isEmpty) return;
+    _partialDebounce = Timer(const Duration(milliseconds: 350), () {
+      _updatePartialOnGlasses(partial);
+    });
+  }
+
+  void _updatePartialOnGlasses(String partial) {
+    if (partial.isEmpty) return;
+    // 部分結果は最後の行として一時的に表示（次の確定で置換）
+    if (_glassLines.isEmpty) {
+      _glassLines.add(partial);
+      _hasTrailingPartial = true;
+    } else if (_hasTrailingPartial) {
+      _glassLines[_glassLines.length - 1] = partial;
+    } else {
+      _glassLines.add(partial);
+      _hasTrailingPartial = true;
+      // バッファは確定時にのみ積み増し
+    }
+    // 最新5行だけ保持
+    if (_glassLines.length > 5) {
+      _glassLines.removeRange(0, _glassLines.length - 5);
+    }
     _renderGlassesLines();
   }
 
