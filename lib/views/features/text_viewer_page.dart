@@ -18,6 +18,9 @@ class _TextViewerPageState extends State<TextViewerPage> {
   String _fileContent = 'Loading...';
   bool _isAutoScroll = false;
   double _scrollSpeed = 8.0;
+  // new: viewer settings
+  double _fontSize = 21.0;
+  double _maxWidth = 488.0; // logical width for line wrapping
 
   @override
   void initState() {
@@ -74,7 +77,7 @@ class _TextViewerPageState extends State<TextViewerPage> {
     setState(() {
       _fileContent = content;
     });
-    _textService.setupText(content);
+    _textService.setupText(content, fontSize: _fontSize, maxWidth: _maxWidth, linesPerPage: 5);
     _textService.sendFirstPage();
   }
 
@@ -107,7 +110,10 @@ class _TextViewerPageState extends State<TextViewerPage> {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: SingleChildScrollView(
-                  child: Text(_fileContent),
+                  child: Text(
+                    _fileContent,
+                    style: TextStyle(fontSize: _fontSize),
+                  ),
                 ),
               ),
             ),
@@ -122,6 +128,72 @@ class _TextViewerPageState extends State<TextViewerPage> {
               ],
             ),
             const SizedBox(height: 20),
+            // font size and text width controls
+            Row(
+              children: [
+                const Text('文字サイズ'),
+                Expanded(
+                  child: Slider(
+                    value: _fontSize,
+                    min: 14,
+                    max: 30,
+                    divisions: 16,
+                    label: _fontSize.toStringAsFixed(0),
+                    onChanged: (v) => setState(() => _fontSize = v),
+                    onChangeEnd: (_) {
+                      // optional: re-render preview only; BLE pages still fixed by device renderer
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Text('1ページ幅'),
+                Expanded(
+                  child: Slider(
+                    value: _maxWidth,
+                    min: 360,
+                    max: 560,
+                    divisions: 20,
+                    label: _maxWidth.toStringAsFixed(0),
+                    onChanged: (v) => setState(() => _maxWidth = v),
+                    onChangeEnd: (_) {
+                      // 再ページング：現在のテキストを新しい幅で測り直して送信
+                      _textService.applyLayout(fontSize: _fontSize, maxWidth: _maxWidth, fullText: _fileContent);
+                      _textService.sendFirstPage();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Text('行数/ページ'),
+                Expanded(
+                  child: Slider(
+                    value: _textService.linesPerPage.toDouble(),
+                    min: 3,
+                    max: 8,
+                    divisions: 5,
+                    label: _textService.linesPerPage.toString(),
+                    onChanged: (v) {
+                      // 表示だけ更新（送信はonChangeEndで）
+                      setState(() {});
+                    },
+                    onChangeEnd: (v) {
+                      _textService.applyLayout(
+                        fontSize: _fontSize,
+                        maxWidth: _maxWidth,
+                        linesPerPage: v.round(),
+                        fullText: _fileContent,
+                      );
+                      _textService.sendFirstPage();
+                    },
+                  ),
+                ),
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

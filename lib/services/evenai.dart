@@ -488,7 +488,7 @@ extension EvenAIDataMethod on EvenAI {
 
   static List<String> measureStringList(String text, [double? maxW]) {
     final double maxWidth = maxW ?? 488; 
-    const double fontSize = 21; // could be customized
+    const double fontSize = 21; // legacy default
 
     List<String> paragraphs = text
         .split('\n')
@@ -511,6 +511,44 @@ extension EvenAIDataMethod on EvenAI {
 
       final lineCount = textPainter.computeLineMetrics().length;
 
+      var start = 0;
+      for (var i = 0; i < lineCount; i++) {
+        final line = textPainter.getLineBoundary(TextPosition(offset: start));
+        ret.add(paragraph.substring(line.start, line.end).trim());
+        start = line.end;
+      }
+    }
+    return ret;
+  }
+
+  /// Advanced splitter allowing custom maxWidth and fontSize.
+  /// Defaults mimic the legacy behavior (488, 21).
+  static List<String> measureStringListAdvanced(
+    String text, {
+    double? maxWidth,
+    double fontSize = 21,
+  }) {
+    final double mw = maxWidth ?? 488;
+
+    final List<String> paragraphs = text
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+
+    final List<String> ret = [];
+    final TextStyle ts = TextStyle(fontSize: fontSize);
+
+    for (final String paragraph in paragraphs) {
+      final textSpan = TextSpan(text: paragraph, style: ts);
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+        maxLines: null,
+      );
+      textPainter.layout(maxWidth: mw);
+
+      final int lineCount = textPainter.computeLineMetrics().length;
       var start = 0;
       for (var i = 0; i < lineCount; i++) {
         final line = textPainter.getLineBoundary(TextPosition(offset: start));
