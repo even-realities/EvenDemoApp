@@ -115,14 +115,15 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             pairedDevices["Pair_\(channelNumber)", default: (nil, nil)].1 = peripheral // Right device
         }
 
-        if let leftPeripheral = pairedDevices["Pair_\(channelNumber)"]?.0, let rightPeripheral = pairedDevices["Pair_\(channelNumber)"]?.1 {
-            let deviceInfo: [String: String] = [
-                "leftDeviceName": leftPeripheral.name ?? "",
-                "rightDeviceName": rightPeripheral.name ?? "",
-                "channelNumber": channelNumber
-            ]
-            channel.invokeMethod("foundPairedGlasses", arguments: deviceInfo)
-        }
+        // Notify Flutter about discovered pair progress (even if only one side)
+        let leftName = pairedDevices["Pair_\(channelNumber)"]?.0?.name ?? ""
+        let rightName = pairedDevices["Pair_\(channelNumber)"]?.1?.name ?? ""
+        let deviceInfo: [String: String] = [
+            "leftDeviceName": leftName,
+            "rightDeviceName": rightName,
+            "channelNumber": channelNumber
+        ]
+        channel.invokeMethod("foundPairedGlasses", arguments: deviceInfo)
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
@@ -164,6 +165,17 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             channel.invokeMethod("glassesConnected", arguments: connectedInfo)
 
             currentConnectingDeviceName = nil
+        } else {
+            // Partial connection: notify Flutter to update UI status
+            let leftName = connectedDevices[deviceName]?.0?.name ?? ""
+            let rightName = connectedDevices[deviceName]?.1?.name ?? ""
+            let partial: [String: Any] = [
+                "leftConnected": !leftName.isEmpty,
+                "rightConnected": !rightName.isEmpty,
+                "leftDeviceName": leftName,
+                "rightDeviceName": rightName
+            ]
+            channel.invokeMethod("glassesConnecting", arguments: partial)
         }
     }
     
@@ -175,8 +187,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         } else {
             print("Disconnected without error.")
         }
-        
-        central.connect(peripheral, options: nil)
+
+        // Clear state for this peripheral and notify Flutter; avoid auto-reconnect loop
+        if let name = currentConnectingDeviceName, var tuple = connectedDevices[name] {
+            if tuple.0 === peripheral { tuple.0 = nil }
+            if tuple.1 === peripheral { tuple.1 = nil }
+            connectedDevices[name] = tuple
+        }
+        channel.invokeMethod("glassesDisconnected", arguments: nil)
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {

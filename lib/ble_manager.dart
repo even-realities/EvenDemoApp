@@ -77,7 +77,7 @@ class BleManager {
         _onGlassesConnected(call.arguments);
         break;
       case 'glassesConnecting':
-        _onGlassesConnecting();
+        _onGlassesConnecting(call.arguments);
         break;
       case 'glassesDisconnected':
         _onGlassesDisconnected();
@@ -115,10 +115,17 @@ class BleManager {
     });
   }
 
-  void _onGlassesConnecting() {
-    connectionStatus = 'Connecting...';
-
-      onStatusChanged?.call();
+  void _onGlassesConnecting([dynamic args]) {
+    if (args is Map) {
+      final left = args['leftDeviceName']?.toString() ?? '';
+      final right = args['rightDeviceName']?.toString() ?? '';
+      final leftFlag = (args['leftConnected'] == true) ? '✓' : '×';
+      final rightFlag = (args['rightConnected'] == true) ? '✓' : '×';
+      connectionStatus = 'Connecting...\nL(' + leftFlag + '): ' + left + '\nR(' + rightFlag + '): ' + right;
+    } else {
+      connectionStatus = 'Connecting...';
+    }
+    onStatusChanged?.call();
   }
 
   void _onGlassesDisconnected() {
