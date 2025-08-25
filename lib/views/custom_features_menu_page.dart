@@ -4,6 +4,7 @@ import 'package:demo_ai_even/views/settings/api_settings_page.dart';
 import 'package:demo_ai_even/views/settings/input_mapping_page.dart';
 import 'package:demo_ai_even/views/settings/elevenlabs_settings_page.dart';
        import 'package:demo_ai_even/views/features/web_reader_page.dart';
+       import 'package:demo_ai_even/views/features/audiobook_viewer_page.dart';
 import 'package:flutter/material.dart';
 
 class CustomFeaturesMenuPage extends StatelessWidget {
@@ -42,6 +43,18 @@ class CustomFeaturesMenuPage extends StatelessWidget {
                        );
                      },
                      child: const Text('Webテキストリーダー'),
+                   ),
+                   const SizedBox(height: 16),
+                   ElevatedButton(
+                     onPressed: () {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(
+                           builder: (context) => const AudiobookViewerPage(),
+                         ),
+                       );
+                     },
+                     child: const Text('オーディオブックビューワー'),
                    ),
                    const SizedBox(height: 16),
               ElevatedButton(
