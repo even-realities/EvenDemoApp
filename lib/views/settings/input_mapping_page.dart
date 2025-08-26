@@ -20,13 +20,29 @@ class _InputMappingPageState extends State<InputMappingPage> {
     service.load().then((_) => setState(() {}));
   }
 
-  Widget _chips(ReaderAction action) {
+  static const Set<String> _remoteControls = {
+    'play', 'pause', 'togglePlayPause', 'nextTrack', 'previousTrack',
+  };
+  static const Set<String> _placeholderControls = {
+    'power', 'remote1', 'remote2',
+  };
+
+  List<String> _controlsForMode(bool remote) {
+    if (remote) {
+      return _remoteControls.toList();
+    }
+    return InputMappingService.allControls
+        .where((c) => !_remoteControls.contains(c) && !_placeholderControls.contains(c))
+        .toList();
+  }
+
+  Widget _chips(ReaderAction action, {required bool remote}) {
     final selected = service.mapping[action] ?? {};
     return Wrap(
       spacing: 8,
       runSpacing: 4,
       children: [
-        for (final c in InputMappingService.allControls)
+        for (final c in _controlsForMode(remote))
           FilterChip(
             label: Text(c),
             selected: selected.contains(c),
@@ -114,19 +130,19 @@ class _InputMappingPageState extends State<InputMappingPage> {
           const SizedBox(height: 16),
           const Text('次ページ'),
           const SizedBox(height: 8),
-          _chips(ReaderAction.nextPage),
+          _chips(ReaderAction.nextPage, remote: _showRemote),
           const Divider(height: 24),
           const Text('前ページ'),
           const SizedBox(height: 8),
-          _chips(ReaderAction.previousPage),
+          _chips(ReaderAction.previousPage, remote: _showRemote),
           const Divider(height: 24),
           const Text('自動スクロール開始'),
           const SizedBox(height: 8),
-          _chips(ReaderAction.autoScrollStart),
+          _chips(ReaderAction.autoScrollStart, remote: _showRemote),
           const Divider(height: 24),
           const Text('自動スクロール停止'),
           const SizedBox(height: 8),
-          _chips(ReaderAction.autoScrollStop),
+          _chips(ReaderAction.autoScrollStop, remote: _showRemote),
         ],
       ),
     );
