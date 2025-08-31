@@ -32,6 +32,8 @@ class BleManager {
   
   final List<Map<String, String>> pairedGlasses = [];
   bool isConnected = false;
+  bool leftConnected = false;
+  bool rightConnected = false;
   String connectionStatus = 'Not connected';
 
   void _init() {}
@@ -94,6 +96,8 @@ class BleManager {
     print("_onGlassesConnected----arguments----$arguments------");
     connectionStatus = 'Connected: \n${arguments['leftDeviceName']} \n${arguments['rightDeviceName']}';
     isConnected = true;
+    leftConnected = true;
+    rightConnected = true;
 
     onStatusChanged?.call();
     startSendBeatHeart();
@@ -121,6 +125,8 @@ class BleManager {
       final right = args['rightDeviceName']?.toString() ?? '';
       final leftFlag = (args['leftConnected'] == true) ? '✓' : '×';
       final rightFlag = (args['rightConnected'] == true) ? '✓' : '×';
+      leftConnected = (args['leftConnected'] == true);
+      rightConnected = (args['rightConnected'] == true);
       connectionStatus = 'Connecting...\nL(' + leftFlag + '): ' + left + '\nR(' + rightFlag + '): ' + right;
     } else {
       connectionStatus = 'Connecting...';
@@ -131,6 +137,8 @@ class BleManager {
   void _onGlassesDisconnected() {
     connectionStatus = 'Not connected';
     isConnected = false;
+    leftConnected = false;
+    rightConnected = false;
 
     onStatusChanged?.call();
   }
@@ -361,10 +369,9 @@ class BleManager {
   }
 
   static bool isBothConnected() {
-    //return isConnectedL() && isConnectedR();
-
-    // todo
-    return true;
+    final inst = _instance;
+    if (inst == null) return false;
+    return inst.leftConnected && inst.rightConnected;
   }
 
   static Future<bool> requestList(

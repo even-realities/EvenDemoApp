@@ -57,6 +57,11 @@
 	</array>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>bluetooth-central</string>
+	</array>
   <!-- ATS exception for development over HTTP to 100.67.175.96 -->
   <key>NSAppTransportSecurity</key>
   <dict>

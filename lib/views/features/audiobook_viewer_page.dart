@@ -8,6 +8,7 @@ import 'package:demo_ai_even/services/evenai.dart';
 import 'package:demo_ai_even/services/media_gateway_service.dart';
 import 'package:demo_ai_even/services/controller_events.dart';
 import 'package:demo_ai_even/services/input_mapping_service.dart';
+import 'package:demo_ai_even/services/silent_audio_keeper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -56,6 +57,9 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
   StreamSubscription<Map<String, dynamic>>? _controllerSub;
   StreamSubscription<Map<String, dynamic>>? _remoteSub;
   final InputMappingService _mapping = InputMappingService.instance;
+  Timer? _pollTimer; // BG-safe polling fallback
+  Duration? _lastPolled;
+  bool _bgKeepAudio = false; // 開発専用: 無音ループでBG維持
 
   @override
   void dispose() {
@@ -63,6 +67,7 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
     _durSub?.cancel();
     _controllerSub?.cancel();
     _remoteSub?.cancel();
+    _pollTimer?.cancel();
     _player.dispose();
     super.dispose();
   }
@@ -273,6 +278,9 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
       _syncTo(pos);
     });
 
+    // Start BG polling fallback if subtitle sending is enabled
+    if (_sendToDevice) _startBgPolling();
+
     // Setup controller mapping on first start if not already
     _controllerSub ??= ControllerEvents().stream.listen((event) {
       final control = event['control'] as String?;
@@ -389,6 +397,26 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
     if (idx != -1) {
       _jumpToCue(idx);
     }
+  }
+
+  void _startBgPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      try {
+        final pos = await _player.getCurrentPosition();
+        if (pos == null) return;
+        // Reduce redundant syncs
+        if (_lastPolled != null && (pos - _lastPolled!).abs() < const Duration(milliseconds: 400)) return;
+        _lastPolled = pos;
+        _position = pos;
+        _syncTo(pos);
+      } catch (_) {}
+    });
+  }
+
+  void _stopBgPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
   // Map ReaderAction (from InputMappingService) to Audiobook actions
@@ -635,6 +663,24 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
               ],
             ),
             const SizedBox(height: 12),
+            // BG維持（無音ループ）
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('BG維持(開発専用)'),
+                Switch(
+                  value: _bgKeepAudio,
+                  onChanged: (v) async {
+                    setState(() => _bgKeepAudio = v);
+                    if (v) {
+                      await SilentAudioKeeper.instance.start();
+                    } else {
+                      await SilentAudioKeeper.instance.stop();
+                    }
+                  },
+                ),
+              ],
+            ),
             Row(
               children: [
                 ElevatedButton(onPressed: _start, child: const Text('再生')),
@@ -675,7 +721,7 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
                 IconButton(onPressed: (){ _seekRelative(const Duration(seconds: 30)); }, icon: const Icon(Icons.forward_30)),
                 IconButton(onPressed: _cues.isEmpty ? null : _jumpToNextCue, icon: const Icon(Icons.skip_next)),
                 const SizedBox(width: 12),
-                IconButton(onPressed: _stop, icon: const Icon(Icons.stop_circle)),
+                IconButton(onPressed: () { _stop(); _stopBgPolling(); }, icon: const Icon(Icons.stop_circle)),
                 const SizedBox(width: 16),
                 DropdownButton<double>(
                   value: _speed,

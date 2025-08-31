@@ -235,4 +235,3 @@ class RemoteCommandManager {
         remoteSink?(dict)
     }
 }
-
