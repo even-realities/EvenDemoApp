@@ -3,6 +3,7 @@ import 'package:demo_ai_even/services/custom_text_service.dart';
 import 'package:demo_ai_even/services/local_file_service.dart';
 import 'package:demo_ai_even/services/controller_events.dart';
 import 'package:demo_ai_even/services/input_mapping_service.dart';
+import 'package:demo_ai_even/services/silent_audio_keeper.dart';
 import 'package:flutter/material.dart';
 
 class TextViewerPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class _TextViewerPageState extends State<TextViewerPage> {
   String _fileContent = 'Loading...';
   bool _isAutoScroll = false;
   double _scrollSpeed = 8.0;
+  bool _bgKeepAudio = false; // 開発専用: 無音ループでBG維持
   // new: viewer settings
   double _fontSize = 21.0;
   double _maxWidth = 488.0; // logical width for line wrapping
@@ -199,6 +201,24 @@ class _TextViewerPageState extends State<TextViewerPage> {
               children: [
                 const Text('自動スクロール'),
                 Switch(value: _isAutoScroll, onChanged: _toggleAutoScroll),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('BG維持(開発専用)'),
+                Switch(
+                  value: _bgKeepAudio,
+                  onChanged: (v) async {
+                    setState(() => _bgKeepAudio = v);
+                    if (v) {
+                      await SilentAudioKeeper.instance.start();
+                    } else {
+                      await SilentAudioKeeper.instance.stop();
+                    }
+                  },
+                ),
               ],
             ),
             if (_isAutoScroll)

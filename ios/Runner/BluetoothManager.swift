@@ -29,6 +29,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     var rightRChar:CBCharacteristic?
     
     var hasStartedSpeech = false
+    // retry counter per peripheral
+    var connectRetry: [UUID: Int] = [:]
+    // deferred scan flag when CoreBluetooth not yet poweredOn
+    var shouldStartScanAfterPowerOn: Bool = false
+    // track scanning status for debugging
+    var isScanning: Bool = false
 
     init(channel: FlutterMethodChannel) {
         UARTServiceUUID          = CBUUID(string: ServiceIdentifiers.uartServiceUUIDString)
@@ -39,19 +45,61 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         self.channel = channel
         self.centralManager = CBCentralManager(delegate: self, queue: nil)
     }
+    
+    func bleStateString() -> String {
+        switch centralManager.state {
+        case .unknown: return "unknown"
+        case .resetting: return "resetting"
+        case .unsupported: return "unsupported"
+        case .unauthorized: return "unauthorized"
+        case .poweredOff: return "poweredOff"
+        case .poweredOn: return "poweredOn"
+        @unknown default: return "unknown"
+        }
+    }
 
     func startScan(result: @escaping FlutterResult) {
         guard centralManager.state == .poweredOn else {
             result(FlutterError(code: "BluetoothOff", message: "Bluetooth is not powered on.", details: nil))
             return
         }
-
         centralManager.scanForPeripherals(withServices: nil, options: nil)
         result("Scanning for devices...")
     }
 
+    private func performDiscoveryAndScan() {
+        isScanning = true
+        // First, retrieve already-connected peripherals having our UART service
+        let connected = centralManager.retrieveConnectedPeripherals(withServices: [UARTServiceUUID])
+        if !connected.isEmpty {
+            for p in connected {
+                let name = p.name ?? ""
+                let comps = name.components(separatedBy: "_")
+                guard comps.count > 1, let channelNumber = comps[safe: 1] else { continue }
+                if name.contains("_L_") {
+                    pairedDevices["Pair_\(channelNumber)", default: (nil, nil)].0 = p
+                } else if name.contains("_R_") {
+                    pairedDevices["Pair_\(channelNumber)", default: (nil, nil)].1 = p
+                }
+                let leftName = pairedDevices["Pair_\(channelNumber)"]?.0?.name ?? ""
+                let rightName = pairedDevices["Pair_\(channelNumber)"]?.1?.name ?? ""
+                let deviceInfo: [String: String] = [
+                    "leftDeviceName": leftName,
+                    "rightDeviceName": rightName,
+                    "channelNumber": channelNumber
+                ]
+                channel.invokeMethod("foundPairedGlasses", arguments: deviceInfo)
+            }
+        }
+        centralManager.scanForPeripherals(
+            withServices: nil,
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
+        )
+    }
+
     func stopScan(result: @escaping FlutterResult) {
         centralManager.stopScan()
+        isScanning = false
         result("Scan stopped")
     }
 
@@ -67,19 +115,15 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
 
         var didAttempt = false
 
-        if let leftPeripheral = peripheralPair.0 {
-            // Connect left if not already connected
-            if connectedDevices[deviceName]?.0 == nil {
-                centralManager.connect(leftPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
-                didAttempt = true
-            }
+        // Connect L then R with slight delay to reduce contention
+        if let leftPeripheral = peripheralPair.0, connectedDevices[deviceName]?.0 == nil {
+            didAttempt = true
+            centralManager.connect(leftPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
         }
-
-        if let rightPeripheral = peripheralPair.1 {
-            // Connect right if not already connected
-            if connectedDevices[deviceName]?.1 == nil {
-                centralManager.connect(rightPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
-                didAttempt = true
+        if let rightPeripheral = peripheralPair.1, connectedDevices[deviceName]?.1 == nil {
+            didAttempt = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.centralManager.connect(rightPeripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
             }
         }
 
@@ -165,6 +209,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             channel.invokeMethod("glassesConnected", arguments: connectedInfo)
 
             currentConnectingDeviceName = nil
+            // reset retry counters
+            connectRetry.removeAll()
         } else {
             // Partial connection: notify Flutter to update UI status
             let leftName = connectedDevices[deviceName]?.0?.name ?? ""
@@ -176,6 +222,26 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
                 "rightDeviceName": rightName
             ]
             channel.invokeMethod("glassesConnecting", arguments: partial)
+
+            // If one side is missing, try to reconnect that side once or twice
+            if connectedDevices[deviceName]?.0 == nil, let l = peripheralPair.0 {
+                let cnt = (connectRetry[l.identifier] ?? 0)
+                if cnt < 2 {
+                    connectRetry[l.identifier] = cnt + 1
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        self.centralManager.connect(l, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                    }
+                }
+            }
+            if connectedDevices[deviceName]?.1 == nil, let r = peripheralPair.1 {
+                let cnt = (connectRetry[r.identifier] ?? 0)
+                if cnt < 2 {
+                    connectRetry[r.identifier] = cnt + 1
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        self.centralManager.connect(r, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                    }
+                }
+            }
         }
     }
     
@@ -188,11 +254,19 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             print("Disconnected without error.")
         }
 
-        // Clear state for this peripheral and notify Flutter; avoid auto-reconnect loop
+        // Clear state for this peripheral and optionally retry during connecting phase
         if let name = currentConnectingDeviceName, var tuple = connectedDevices[name] {
             if tuple.0 === peripheral { tuple.0 = nil }
             if tuple.1 === peripheral { tuple.1 = nil }
             connectedDevices[name] = tuple
+            // attempt reconnect a limited number of times
+            let cnt = (connectRetry[peripheral.identifier] ?? 0)
+            if cnt < 2 {
+                connectRetry[peripheral.identifier] = cnt + 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    self.centralManager.connect(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                }
+            }
         }
         channel.invokeMethod("glassesDisconnected", arguments: nil)
     }
@@ -200,7 +274,20 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         print("didFailToConnect peripheral: \(String(describing: peripheral.name)) error: \(String(describing: error?.localizedDescription))")
         // Optionally notify Flutter side to refresh UI/state
-        channel.invokeMethod("glassesDisconnected", arguments: nil)
+        if let _ = currentConnectingDeviceName {
+            // limited retry for failed side during connecting phase
+            let cnt = (connectRetry[peripheral.identifier] ?? 0)
+            if cnt < 2 {
+                connectRetry[peripheral.identifier] = cnt + 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    self.centralManager.connect(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey: true])
+                }
+            } else {
+                channel.invokeMethod("glassesDisconnected", arguments: nil)
+            }
+        } else {
+            channel.invokeMethod("glassesDisconnected", arguments: nil)
+        }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
@@ -263,13 +350,95 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        print("centralManagerDidUpdateState: state=\(bleStateString())")
         switch central.state {
         case .poweredOn:
             print("Bluetooth is powered on.")
+            if shouldStartScanAfterPowerOn {
+                shouldStartScanAfterPowerOn = false
+                performDiscoveryAndScan()
+            }
         case .poweredOff:
             print("Bluetooth is powered off.")
         default:
             print("Bluetooth state is unknown or unsupported.")
+        }
+    }
+
+    // MARK: - Debug helpers
+    func bleAuthString() -> String {
+        if #available(iOS 13.0, *) {
+            switch CBCentralManager.authorization {
+            case .allowedAlways: return "allowedAlways"
+            case .denied: return "denied"
+            case .restricted: return "restricted"
+            case .notDetermined: return "notDetermined"
+            @unknown default: return "unknown"
+            }
+        } else {
+            return "n/a"
+        }
+    }
+
+    func debugInfo() -> [String: Any] {
+        return [
+            "state": bleStateString(),
+            "auth": bleAuthString(),
+            "isScanning": isScanning
+        ]
+    }
+
+    func reinitCentral() {
+        self.centralManager = CBCentralManager(
+            delegate: self,
+            queue: nil,
+            options: [
+                CBCentralManagerOptionShowPowerAlertKey: true,
+                CBCentralManagerOptionRestoreIdentifierKey: "com.demoai.even.bluetooth"
+            ]
+        )
+        shouldStartScanAfterPowerOn = false
+        isScanning = false
+    }
+    
+    // Support state restoration to work reliably in background
+    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
+        print("centralManager willRestoreState: \(dict)")
+        guard let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral], !peripherals.isEmpty else {
+            return
+        }
+        // Try to re-attach delegates and rediscover services/chars
+        for p in peripherals {
+            p.delegate = self
+            p.discoverServices([UARTServiceUUID])
+            // Assign to left/right if we can infer by name
+            let name = p.name ?? ""
+            if name.contains("_L_") {
+                self.leftPeripheral = p
+                self.leftUUIDStr = p.identifier.uuidString
+            } else if name.contains("_R_") {
+                self.rightPeripheral = p
+                self.rightUUIDStr = p.identifier.uuidString
+            }
+        }
+        // Update Flutter side about partial/complete restore
+        var leftName = leftPeripheral?.name ?? ""
+        var rightName = rightPeripheral?.name ?? ""
+        if !leftName.isEmpty && !rightName.isEmpty {
+            let connectedInfo: [String: String] = [
+                "leftDeviceName": leftName,
+                "rightDeviceName": rightName,
+                "status": "connected"
+            ]
+            channel.invokeMethod("glassesConnected", arguments: connectedInfo)
+        } else if !leftName.isEmpty || !rightName.isEmpty {
+            let partial: [String: Any] = [
+                "leftConnected": !leftName.isEmpty,
+                "rightConnected": !rightName.isEmpty,
+                "leftDeviceName": leftName,
+                "rightDeviceName": rightName
+            ]
+            channel.invokeMethod("glassesConnecting", arguments: partial)
         }
     }
     

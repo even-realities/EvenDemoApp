@@ -4,6 +4,7 @@ import 'package:demo_ai_even/views/features/text_viewer_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:demo_ai_even/services/silent_audio_keeper.dart';
 
 class WebReaderPage extends StatefulWidget {
   const WebReaderPage({super.key});
@@ -18,6 +19,7 @@ class _WebReaderPageState extends State<WebReaderPage> {
   WebTextExtractorResult? _result;
   bool _loading = false;
   String? _error;
+  bool _bgKeepAudio = false; // 開発専用
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; _result = null; });
@@ -57,6 +59,24 @@ class _WebReaderPageState extends State<WebReaderPage> {
                     final uri = Uri.parse(_url.text.trim());
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text('BG維持(開発専用)'),
+                Switch(
+                  value: _bgKeepAudio,
+                  onChanged: (v) async {
+                    setState(() => _bgKeepAudio = v);
+                    if (v) {
+                      await SilentAudioKeeper.instance.start();
+                    } else {
+                      await SilentAudioKeeper.instance.stop();
                     }
                   },
                 ),

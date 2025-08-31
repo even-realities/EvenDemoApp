@@ -181,19 +181,16 @@ class _VoiceAsrPageState extends State<VoiceAsrPage> {
     final text = _glassLines.map((e) => '$e\n').join();
     if (text.trim().isEmpty) return;
     try {
-      // 公式挙動に合わせて: 初回0x30 -> 以後0x50 で更新
-      final status = _primed ? 0x50 : 0x30;
+      // Text Showモードで常に表示（EvenAI listening UIを避ける）
       final ok = await Proto.sendEvenAIData(
         text,
-        newScreen: EvenAIDataMethod.transferToNewScreen(0x01, status),
+        newScreen: EvenAIDataMethod.transferToNewScreen(0x01, 0x70),
         pos: 0,
         current_page_num: 1,
         max_page_num: 1,
       );
       if (!ok && mounted) {
         Fluttertoast.showToast(msg: 'グラス送信失敗（未接続/タイムアウト）');
-      } else if (ok) {
-        _primed = true;
       }
     } catch (_) {}
   }

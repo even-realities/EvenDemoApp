@@ -217,16 +217,8 @@ class EvenAI {
       String headString = '\n\n';
       startScreenWords = headString + startScreenWords;
 
-      // The glasses need to have 0x30 before they can process 0x40
-      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x30, 0);
-      
-      // Send 0x40 after 3 seconds
-      await Future.delayed(Duration(seconds: 3));
-      // If already switched to manual mode, no need to send 0x40.
-      if (_isManual) {
-        return;
-      }
-      isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x40, 0);
+      // Switch to Text Show to avoid EvenAI listening UI
+      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x70, 0);
       return;
     }
     if (list.length == 4) {
@@ -235,31 +227,22 @@ class EvenAI {
       String headString = '\n';
       startScreenWords = headString + startScreenWords;
 
-      // // The glasses need to have 0x30 before they can process 0x40
-      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x30, 0);
-      await Future.delayed(Duration(seconds: 3));
-      if (_isManual) {
-        return;
-      }
-      isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x40, 0);
+      // Text Show (no 0x40 finalize)
+      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x70, 0);
       return;
     }
 
     if (list.length == 5) {
       String startScreenWords =
           list.sublist(0, 5).map((str) => '$str\n').join();
-      // // The glasses need to have 0x30 before they can process 0x40
-      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x30, 0);
-      await Future.delayed(Duration(seconds: 3));
-      if (_isManual) {
-        return;
-      }
-      isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x40, 0);
+      // Text Show (no 0x40 finalize)
+      bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x70, 0);
       return;
     }
 
     String startScreenWords = list.sublist(0, 5).map((str) => '$str\n').join();
-    bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x30, 0);
+    // Text Show first page instead of EvenAI display
+    bool isSuccess = await sendEvenAIReply(startScreenWords, 0x01, 0x70, 0);
 
     if (isSuccess) {
       _currentLine = 0;
@@ -295,26 +278,14 @@ class EvenAI {
               .map((str) => '$str\n')
               .join();
 
-          if (_currentLine >= list.length - 5) {
-            await sendEvenAIReply(mergedStr, 0x01, 0x40, 0);
-            _timer?.cancel();
-            _timer = null;
-          } else {
-            await sendEvenAIReply(mergedStr, 0x01, 0x30, 0);
-          }
+          await sendEvenAIReply(mergedStr, 0x01, 0x70, 0);
         } else {
           var mergedStr = sendReplys
               .sublist(0, min(5, sendReplys.length))
               .map((str) => '$str\n')
               .join();
 
-          if (_currentLine >= list.length - 5) {
-            await sendEvenAIReply(mergedStr, 0x01, 0x40, 0);
-            _timer?.cancel();
-            _timer = null;
-          } else {
-            await sendEvenAIReply(mergedStr, 0x01, 0x30, 0);
-          }
+          await sendEvenAIReply(mergedStr, 0x01, 0x70, 0);
         }
       }
     });
@@ -371,13 +342,13 @@ class EvenAI {
           .sublist(0, sendReplys.length)
           .map((str) => '$str\n')
           .join();
-      await sendEvenAIReply(mergedStr, 0x01, 0x50, 0);
+      await sendEvenAIReply(mergedStr, 0x01, 0x70, 0);
     } else {
       var mergedStr = sendReplys
           .sublist(0, min(5, sendReplys.length))
           .map((str) => '$str\n')
           .join();
-      await sendEvenAIReply(mergedStr, 0x01, 0x50, 0);
+      await sendEvenAIReply(mergedStr, 0x01, 0x70, 0);
     }
   }
 
@@ -389,7 +360,7 @@ class EvenAI {
       String headString = '\n\n';
       screenWords = headString + screenWords;
 
-      await sendEvenAIReply(screenWords, 0x01, 0x50, 0);
+      await sendEvenAIReply(screenWords, 0x01, 0x70, 0);
       return;
     }
 
@@ -398,14 +369,14 @@ class EvenAI {
       String headString = '\n';
       screenWords = headString + screenWords;
 
-      await sendEvenAIReply(screenWords, 0x01, 0x50, 0);
+      await sendEvenAIReply(screenWords, 0x01, 0x70, 0);
       return;
     }
 
     if (list.length == 5) {
       String screenWords = list.sublist(0, 5).map((str) => '$str\n').join();
 
-      await sendEvenAIReply(screenWords, 0x01, 0x50, 0);
+      await sendEvenAIReply(screenWords, 0x01, 0x70, 0);
       return;
     }
   }
