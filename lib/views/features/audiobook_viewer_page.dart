@@ -6,6 +6,8 @@ import 'package:demo_ai_even/services/subtitle_parser.dart';
 import 'package:demo_ai_even/services/proto.dart';
 import 'package:demo_ai_even/services/evenai.dart';
 import 'package:demo_ai_even/services/media_gateway_service.dart';
+import 'package:demo_ai_even/services/controller_events.dart';
+import 'package:demo_ai_even/services/input_mapping_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -51,11 +53,16 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
   double _speed = 1.0;
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
+  StreamSubscription<Map<String, dynamic>>? _controllerSub;
+  StreamSubscription<Map<String, dynamic>>? _remoteSub;
+  final InputMappingService _mapping = InputMappingService.instance;
 
   @override
   void dispose() {
     _posSub?.cancel();
     _durSub?.cancel();
+    _controllerSub?.cancel();
+    _remoteSub?.cancel();
     _player.dispose();
     super.dispose();
   }
@@ -265,6 +272,20 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
       setState(() { _position = pos; });
       _syncTo(pos);
     });
+
+    // Setup controller mapping on first start if not already
+    _controllerSub ??= ControllerEvents().stream.listen((event) {
+      final control = event['control'] as String?;
+      if (control == null) return;
+      final action = _mapping.actionForControl(control);
+      _handleMappedAction(action);
+    });
+    _remoteSub ??= ControllerEvents().remoteStream.listen((event) {
+      final control = event['control'] as String?;
+      if (control == null) return;
+      final action = _mapping.actionForControl(control);
+      _handleMappedAction(action);
+    });
   }
 
   Future<void> _togglePlayPause() async {
@@ -367,6 +388,28 @@ class _AudiobookViewerPageState extends State<AudiobookViewerPage> {
     }
     if (idx != -1) {
       _jumpToCue(idx);
+    }
+  }
+
+  // Map ReaderAction (from InputMappingService) to Audiobook actions
+  void _handleMappedAction(ReaderAction? action) {
+    switch (action) {
+      case ReaderAction.nextPage:
+        _jumpToNextCue();
+        break;
+      case ReaderAction.previousPage:
+        _jumpToPrevCue();
+        break;
+      case ReaderAction.autoScrollStart:
+        // Use as Play/Resume
+        if (!_isPlaying) { _togglePlayPause(); }
+        break;
+      case ReaderAction.autoScrollStop:
+        // Use as Pause
+        if (_isPlaying) { _togglePlayPause(); }
+        break;
+      default:
+        break;
     }
   }
 
