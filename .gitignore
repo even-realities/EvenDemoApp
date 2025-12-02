@@ -42,3 +42,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/app/.*/*
+
+# Local virtual environment for Focus Assistant tests
+.venv/
+
+# Test artifacts
+task_behavior_log.csv

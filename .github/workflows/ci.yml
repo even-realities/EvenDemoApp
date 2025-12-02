@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Syntax & smoke checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Show Python & pip
+        run: |
+          python --version
+          pip --version
+
+      - name: Syntax check focus_assistant.py
+        run: python -m py_compile tools/focus_assistant.py
+
+      - name: Smoke test - verify files present
+        run: |
+          test -f requirements.txt || (echo "requirements.txt missing" && exit 1)
+          test -f tools/focus_assistant.py || (echo "script missing" && exit 1)
+
+      - name: Optional lint (non-fatal)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyflakes || true
+          python -m pyflakes tools/focus_assistant.py || true

@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/Users/edy/Desktop/Platform/Demo/demo_ai_even/linux"
+    "cmake.sourceDirectory": "/Users/edy/Desktop/Platform/Demo/demo_ai_even/linux",
+    "r.rpath.linux": "/usr/bin/R"
 }
