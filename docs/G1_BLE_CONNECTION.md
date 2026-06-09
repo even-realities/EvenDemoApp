@@ -1,5 +1,7 @@
 # EvenDemoApp — G1 蓝牙连接流程说明
 
+> English: [G1_BLE_CONNECTION.en.md](G1_BLE_CONNECTION.en.md)
+
 > **分析依据**：参考仓库内 BLE 分层与文档化习惯（与 `even-ble-logic` 技能中 G2/R1 的「App → 协议 → 原生 GATT」思路一致）。本工程为 **G1 演示应用**，双端均为 **Flutter MethodChannel + 平台原生 BLE**，**未**接入 `flutter_ezw_ble` / `even_connect`。
 
 ---
